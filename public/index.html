@@ -3,6 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data API Hub</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #1e3c72 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 3em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        .markets {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .market-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .market-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+        .market-card.ta125 {
+            border-color: #667eea;
+        }
+        .market-card.sp500 {
+            border-color: #1e3c72;
+        }
+        .market-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .market-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .market-subtitle {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .market-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .api-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .api-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .api-link:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .api-link.sp500 {
+            background: linear-gradient(45deg, #1e3c72, #2a5298);
+        }
+        .status {
+            text-align: center;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .update-schedule {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            color: #856404;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Stock Data API Hub</h1>
+        <div class="subtitle">
+            Real-time OHLCV data for global markets • Updated daily via GitHub Actions
+        </div>
+        
+        <div class="status">
+            ✅ Both markets are online and serving fresh stock data
+        </div>
+
+        <div class="markets">
+            <!-- TA125 Market Card -->
+            <div class="market-card ta125">
+                <div class="market-header">
+                    <div class="market-title">🇮🇱 TA125</div>
+                    <div class="market-subtitle">Tel Aviv Stock Exchange</div>
+                </div>
+                
+                <div class="market-stats">
+                    <div class="stat">
+                        <div class="stat-number" id="ta125Count">125+</div>
+                        <div class="stat-label">Symbols</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">ILS</div>
+                        <div class="stat-label">Currency</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">02:00</div>
+                        <div class="stat-label">UTC Update</div>
+                    </div>
+                </div>
+                
+                <div class="api-links">
+                    <a href="./ta125_ohlcv_latest.json" class="api-link" target="_blank">📊 JSON Data</a>
+                    <a href="./ta125.html" class="api-link">📋 Details</a>
+                </div>
+            </div>
+
+            <!-- SP500 Market Card -->
+            <div class="market-card sp500">
+                <div class="market-header">
+                    <div class="market-title">🇺🇸 SP500</div>
+                    <div class="market-subtitle">US Stock Markets</div>
+                </div>
+                
+                <div class="market-stats">
+                    <div class="stat">
+                        <div class="stat-number" id="sp500Count">500+</div>
+                        <div class="stat-label">Symbols</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">USD</div>
+                        <div class="stat-label">Currency</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">02:10</div>
+                        <div class="stat-label">UTC Update</div>
+                    </div>
+                </div>
+                
+                <div class="api-links">
+                    <a href="./sp500_ohlcv_latest.json" class="api-link sp500" target="_blank">📊 JSON Data</a>
+                    <a href="./sp500.html" class="api-link sp500">📋 Details</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-schedule">
+            <h3>⏰ Automated Update Schedule</h3>
+            <p><strong>🇮🇱 TA125:</strong> Daily at 02:00 UTC (~27 minutes duration)</p>
+            <p><strong>🇺🇸 SP500:</strong> Daily at 02:10 UTC (~110 minutes duration)</p>
+            <p><strong>📊 Data Source:</strong> Alpha Vantage API via GitHub Actions</p>
+        </div>
+
+        <h2>🚀 Quick Start for Developers:</h2>
+        
+        <div class="api-endpoint">
+            <div class="endpoint-title">Flutter Integration</div>
+            <div class="endpoint-url">
+// Fetch TA125 data
+final ta125Response = await http.get(
+  Uri.parse('https://stock-data-hosting.web.app/ta125_ohlcv_latest.json')
+);
+
+// Fetch SP500 data  
+final sp500Response = await http.get(
+  Uri.parse('https://stock-data-hosting.web.app/sp500_ohlcv_latest.json')
+);
+
+final ta125Data = json.decode(ta125Response.body);
+final sp500Data = json.decode(sp500Response.body);
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔄 Data refreshed automatically • 📱 Ready for mobile apps • 🌐 CORS enabled</p>
+            <p>Last page update: <span id="pageUpdate"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Load market data and update stats
+        Promise.all([
+            fetch('./ta125_ohlcv_latest.json').then(r => r.json()).catch(() => null),
+            fetch('./sp500_ohlcv_latest.json').then(r => r.json()).catch(() => null)
+        ]).then(([ta125Data, sp500Data]) => {
+            // Update TA125 count
+            if (ta125Data?.total_symbols) {
+                document.getElementById('ta125Count').textContent = ta125Data.total_symbols;
+            }
+            
+            // Update SP500 count
+            if (sp500Data?.total_symbols) {
+                document.getElementById('sp500Count').textContent = sp500Data.total_symbols;
+            }
+        });
+
+        // Set page update time
+        document.getElementById('pageUpdate').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock Data API</title>
     <style>
         body {
