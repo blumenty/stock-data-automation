@@ -146,7 +146,7 @@ def main():
     logger.info(f"📊 Total symbols: {len(SP500_SYMBOLS)}")
     
     # Get API key
-    api_key = os.getenv('ALPHA_VANTAGE_API_KEY_SP500')
+    api_key = os.getenv('ALPHA_VANTAGE_API_KEY')
     
     if not api_key:
         logger.error("❌ ALPHA_VANTAGE_API_KEY environment variable not found!")
