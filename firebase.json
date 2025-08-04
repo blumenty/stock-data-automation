@@ -4,30 +4,22 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**",
-      "**/*.py",
-      "requirements.txt",
-      "README.md"
+      "**/node_modules/**"
     ],
     "headers": [
       {
-        "source": "**/*_ohlcv_latest.json",
+        "source": "**/*.json",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=86400"
-          },
           {
             "key": "Access-Control-Allow-Origin",
             "value": "*"
           },
           {
-            "key": "Access-Control-Allow-Methods", 
-            "value": "GET, OPTIONS"
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
           }
         ]
       }
-    ],
-    "cleanUrls": true
+    ]
   }
 }
