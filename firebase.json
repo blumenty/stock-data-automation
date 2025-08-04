@@ -6,50 +6,28 @@
       "**/.*",
       "**/node_modules/**",
       "**/*.py",
-      "**/*.pyc",
-      "**/__pycache__/**",
-      "README.md",
-      ".github/**"
-    ],
-    "rewrites": [
-      {
-        "source": "/api/ta125",
-        "destination": "/ta125_ohlcv_latest.json"
-      }
+      "requirements.txt",
+      "README.md"
     ],
     "headers": [
       {
-        "source": "**/*.json",
+        "source": "**/*_ohlcv_latest.json",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=3600"
+            "value": "public, max-age=86400"
           },
           {
             "key": "Access-Control-Allow-Origin",
             "value": "*"
           },
           {
-            "key": "Access-Control-Allow-Methods",
+            "key": "Access-Control-Allow-Methods", 
             "value": "GET, OPTIONS"
-          },
-          {
-            "key": "Access-Control-Allow-Headers",
-            "value": "Content-Type"
-          }
-        ]
-      },
-      {
-        "source": "**/*.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=1800"
           }
         ]
       }
     ],
-    "cleanUrls": true,
-    "trailingSlash": false
+    "cleanUrls": true
   }
 }
