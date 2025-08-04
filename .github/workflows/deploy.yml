@@ -1,5 +1,5 @@
 name: 📈 Update Stock Data & Deploy
-
+ 
 on:
   # Run daily at 02:00 UTC (after market close)
   schedule:
