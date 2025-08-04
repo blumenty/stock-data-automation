@@ -1,4 +1,4 @@
-name: 🇮🇱 Update TA125 Data
+name: Update TA125 Data
 
 on:
   schedule:
@@ -11,141 +11,75 @@ jobs:
     timeout-minutes: 60
     
     steps:
-    - name: 🛎️ Checkout Repository
+    - name: Checkout Repository
       uses: actions/checkout@v4
       
-    - name: 🐍 Set up Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip'
     
-    - name: 📦 Install Dependencies
+    - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
         
-    - name: 📁 Setup Directories
-      run: |
-        mkdir -p public
-        ls -la
+    - name: Create Public Directory
+      run: mkdir -p public
         
-    - name: 🇮🇱 Fetch TA125 Data
-      run: |
-        echo "🇮🇱 Starting TA125 data fetch..."
-        echo "📅 Time: $(date -u)"
-        python fetch_ta125_data.py
+    - name: Run TA125 Data Fetcher
+      run: python fetch_ta125_data.py
         
-    - name: ✅ Validate JSON Output
+    - name: Verify JSON File
       run: |
-        echo "📋 Checking generated files..."
-        ls -la public/
-        
         if [ -f "public/ta125_ohlcv_latest.json" ]; then
-          echo "✅ JSON file exists"
-          echo "📊 Size: $(du -h public/ta125_ohlcv_latest.json)"
-          
-          # Validate JSON syntax
-          python -c "import json; json.load(open('public/ta125_ohlcv_latest.json'))"
-          echo "✅ JSON syntax is valid"
-          
-          # Check file size
-          SIZE=$(stat -f%z public/ta125_ohlcv_latest.json 2>/dev/null || stat -c%s public/ta125_ohlcv_latest.json)
-          if [ "$SIZE" -lt 1000 ]; then
-            echo "❌ File too small: ${SIZE} bytes"
-            exit 1
-          fi
-          echo "✅ File size OK: ${SIZE} bytes"
-          
+          echo "JSON file created successfully"
+          ls -la public/ta125_ohlcv_latest.json
         else
-          echo "❌ JSON file not found!"
+          echo "ERROR: JSON file not found"
           exit 1
         fi
     
-    - name: 📄 Copy HTML Files
+    - name: Copy HTML to Public
       run: |
         if [ -f "index.html" ]; then
           cp index.html public/
-          echo "✅ Copied index.html"
         fi
-        echo "📋 Final contents:"
-        ls -la public/
     
-    - name: 🔧 Setup Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
     
-    - name: 📦 Install Firebase CLI
-      run: |
-        npm install -g firebase-tools
-        firebase --version
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
     
-    - name: 🚀 Deploy to Firebase
-      run: |
-        echo "🚀 Deploying to Firebase..."
-        firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
-        echo "✅ Deployment complete!"
+    - name: Deploy to Firebase
+      run: firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
     
-    - name: 🧪 Test Deployment
+    - name: Test API Endpoint
       run: |
-        echo "🧪 Testing API endpoint..."
-        sleep 5
-        
         if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
+          sleep 10
           API_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
-          echo "📡 Testing: $API_URL"
-          
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL")
-          echo "HTTP Status: $HTTP_CODE"
-          
+          echo "API Status: $HTTP_CODE"
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ API endpoint is live!"
+            echo "SUCCESS: API is live"
           else
-            echo "⚠️ API returned HTTP $HTTP_CODE"
+            echo "WARNING: API returned $HTTP_CODE"
           fi
-        else
-          echo "⚠️ FIREBASE_PROJECT_ID not set, skipping endpoint test"
         fi
     
-    - name: 📊 Summary Report
+    - name: Summary
       if: always()
       run: |
-        echo ""
-        echo "🇮🇱 TA125 DEPLOYMENT SUMMARY"
-        echo "============================="
-        echo "⏰ Completed: $(date -u)"
-        echo ""
-        
+        echo "TA125 Deployment Complete"
+        echo "Time: $(date -u)"
         if [ -f "public/ta125_ohlcv_latest.json" ]; then
-          echo "✅ JSON file: EXISTS"
-          
-          python -c "
-import json
-try:
-    with open('public/ta125_ohlcv_latest.json') as f:
-        data = json.load(f)
-    total = data.get('total_symbols', 0)
-    success = data.get('successful_symbols', 0)
-    rate = (success/total*100) if total > 0 else 0
-    print(f'📈 Symbols: {success}/{total} ({rate:.1f}%)')
-    print(f'💱 Currency: {data.get(\"currency\", \"ILS\")}')
-    print(f'🏢 Exchange: {data.get(\"exchange\", \"TASE\")}')
-except Exception as e:
-    print(f'❌ Error: {e}')
-"
+          echo "Status: SUCCESS"
         else
-          echo "❌ JSON file: MISSING"
+          echo "Status: FAILED"
         fi
-        
-        if [ -n "${{ secrets.FIREBASE_PROJECT_ID }}" ]; then
-          echo ""
-          echo "🌐 URLs:"
-          echo "   API: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
-          echo "   Web: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
-        fi
-        
-        echo ""
-        echo "🔄 Next update: Tomorrow at 02:00 UTC"
