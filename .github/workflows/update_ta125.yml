@@ -1,7 +1,7 @@
 name: 🇮🇱 Update TA125 Data
 
 on:
-  # Run daily at 02:00 UTC
+  # Run daily at 02:00 UTC (5:00 AM Israel time)
   schedule:
     - cron: '0 2 * * *'
   
@@ -21,81 +21,232 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        cache: 'pip'
     
-    - name: 📦 Install Dependencies
+    - name: 📦 Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
         
-    - name: 🇮🇱 Fetch TA125 Stock Data from TASE
+    - name: 📁 Create Public Directory
       run: |
-        echo "🇮🇱 Starting TA125 data fetch from TASE API sources..."
-        echo "📅 Current time: $(date -u)"
-        echo "📊 Using TASE API + Yahoo Finance Israel fallback"
-        
         mkdir -p public
+        ls -la
+        
+    - name: 🇮🇱 Fetch TA125 Stock Data
+      run: |
+        echo "🇮🇱 Starting TA125 data fetch using Yahoo Finance HTTP API..."
+        echo "📅 Current time: $(date -u)"
+        echo "📊 Processing TA125 symbols from TASE"
+        
+        # Run the Python script
         python fetch_ta125_data.py
         
-        echo "📋 TA125 files generated:"
+        echo "📋 Files in public directory:"
         ls -la public/
         
         if [ -f "public/ta125_ohlcv_latest.json" ]; then
-          echo "✅ TA125 file created successfully"
-          echo "📊 File size: $(du -h public/ta125_ohlcv_latest.json)"
+          echo "✅ TA125 JSON file created successfully"
+          echo "📊 File size: $(du -h public/ta125_ohlcv_latest.json | cut -f1)"
+          
+          # Show basic file info
+          python -c "
+import json
+import os
+try:
+    with open('public/ta125_ohlcv_latest.json', 'r') as f:
+        data = json.load(f)
+        print(f'📈 Total symbols: {data.get(\"total_symbols\", 0)}')
+        print(f'✅ Successful: {data.get(\"successful_symbols\", 0)}')
+        print(f'💱 Currency: {data.get(\"currency\", \"ILS\")}')
+        print(f'🏢 Exchange: {data.get(\"exchange\", \"TASE\")}')
+        
+        # Check file size
+        file_size = os.path.getsize('public/ta125_ohlcv_latest.json')
+        print(f'📦 File size: {file_size:,} bytes')
+        
+        if file_size < 1000:  # Less than 1KB indicates problem
+            print('⚠️ Warning: File size seems too small')
+            exit(1)
+except Exception as e:
+    print(f'❌ Error reading JSON file: {e}')
+    exit(1)
+"
         else
-          echo "❌ TA125 file not found!"
+          echo "❌ TA125 JSON file not found!"
+          echo "📋 Contents of public directory:"
+          find public/ -type f -exec ls -la {} \;
           exit 1
         fi
-      env:
-        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+    
+    - name: 📄 Copy HTML Files to Public
+      run: |
+        # Copy the HTML files to public directory
+        if [ -f "index.html" ]; then
+          cp index.html public/
+          echo "✅ Copied index.html to public/"
+        fi
+        
+        echo "📋 Final public directory contents:"
+        ls -la public/
     
     - name: 🔧 Setup Node.js for Firebase
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        cache: 'npm'
     
     - name: 📦 Install Firebase CLI
-      run: npm install -g firebase-tools
-    
-    - name: 🚀 Deploy TA125 Data to Firebase
       run: |
-        echo "🚀 Deploying TA125 data to Firebase..."
-        firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
+        npm install -g firebase-tools
+        firebase --version
+    
+    - name: 🔥 Deploy to Firebase Hosting
+      run: |
+        echo "🚀 Deploying TA125 data to Firebase Hosting..."
+        echo "📁 Deploying from public/ directory"
         
-        echo "✅ TA125 deployment complete!"
-        echo "🌐 TA125 API: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+        # Deploy using Firebase token
+        firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive --project "$FIREBASE_PROJECT_ID"
+        
+        echo "✅ Firebase deployment complete!"
+        echo "🌐 TA125 API URL: https://$FIREBASE_PROJECT_ID.web.app/ta125_ohlcv_latest.json"
+        echo "🏠 Website URL: https://$FIREBASE_PROJECT_ID.web.app/"
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
     
-    - name: 📊 TA125 Summary Report
+    - name: 🧪 Test API Endpoint
+      run: |
+        echo "🧪 Testing deployed API endpoint..."
+        sleep 10  # Wait for deployment to propagate
+        
+        # Test the API endpoint
+        API_URL="https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+        
+        echo "📡 Testing: $API_URL"
+        
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL")
+        
+        if [ "$HTTP_STATUS" = "200" ]; then
+          echo "✅ API endpoint is responding correctly (HTTP $HTTP_STATUS)"
+          
+          # Test JSON validity
+          curl -s "$API_URL" | python -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(f'✅ JSON is valid')
+    print(f'📊 Symbols in API: {data.get(\"successful_symbols\", 0)}')
+    print(f'📅 Last updated: {data.get(\"last_updated\", \"Unknown\")}')
+except Exception as e:
+    print(f'❌ JSON validation failed: {e}')
+    exit(1)
+"
+        else
+          echo "❌ API endpoint test failed (HTTP $HTTP_STATUS)"
+          exit 1
+        fi
+    
+    - name: 📊 Final Summary Report
       if: always()
       run: |
-        echo "📊 TA125 DEPLOYMENT SUMMARY"
-        echo "=========================="
+        echo ""
+        echo "╔══════════════════════════════════════════════════════════════╗"
+        echo "║                    🇮🇱 TA125 DEPLOYMENT SUMMARY                  ║"
+        echo "╚══════════════════════════════════════════════════════════════╝"
+        echo ""
         echo "⏰ Completed at: $(date -u)"
-        echo "🇮🇱 Market: TA125 (TASE)"
+        echo "🇮🇱 Market: TA125 (Tel Aviv Stock Exchange)"
+        echo "💻 Python Version: $(python --version)"
+        echo "🔥 Firebase CLI: $(firebase --version)"
+        echo ""
         
         if [ -f "public/ta125_ohlcv_latest.json" ]; then
           python -c "
-        import json
+import json
+import os
+from datetime import datetime
+
+try:
+    with open('public/ta125_ohlcv_latest.json', 'r') as f:
+        data = json.load(f)
+        
+    total = data.get('total_symbols', 0)
+    success = data.get('successful_symbols', 0) 
+    rate = (success/total*100) if total > 0 else 0
+    
+    print(f'📈 Processed: {success}/{total} symbols ({rate:.1f}% success rate)')
+    print(f'💱 Currency: {data.get(\"currency\", \"ILS\")}')
+    print(f'🏢 Exchange: {data.get(\"exchange\", \"TASE\")}')
+    print(f'🔄 Data Source: {data.get(\"data_source\", \"Yahoo Finance\")}')
+    
+    if data.get('failed_symbols'):
+        failed_count = len(data['failed_symbols'])
+        print(f'❌ Failed: {failed_count} symbols')
+        if failed_count <= 5:
+            print(f'   Failed symbols: {data[\"failed_symbols\"]}')
+        else:
+            print(f'   First 5 failed: {data[\"failed_symbols\"][:5]}...')
+    
+    # File info
+    file_size = os.path.getsize('public/ta125_ohlcv_latest.json')
+    print(f'📦 JSON file size: {file_size:,} bytes ({file_size/1024:.1f} KB)')
+    
+    # Last updated
+    if data.get('last_updated'):
         try:
-          with open('public/ta125_ohlcv_latest.json', 'r') as f:
-            data = json.load(f)
-            total = data.get('total_symbols', 0)
-            success = data.get('successful_symbols', 0) 
-            rate = (success/total*100) if total > 0 else 0
-            print(f'📈 TA125: {success}/{total} symbols ({rate:.1f}% success)')
-            print(f'💱 Currency: {data.get(\"currency\", \"ILS\")}')
-            print(f'🏢 Exchange: {data.get(\"exchange\", \"TASE\")}')
-            if data.get('failed_symbols'):
-              failed_count = len(data['failed_symbols'])
-              print(f'❌ Failed: {failed_count} symbols')
-        except Exception as e:
-          print(f'❌ Error reading TA125 file: {e}')
-        "
+            updated_time = datetime.fromisoformat(data['last_updated'].replace('Z', '+00:00'))
+            print(f'🕐 Last updated: {updated_time.strftime(\"%Y-%m-%d %H:%M:%S UTC\")}')
+        except:
+            print(f'🕐 Last updated: {data[\"last_updated\"]}')
+            
+except Exception as e:
+    print(f'❌ Error reading TA125 summary: {e}')
+"
         else
-          echo "❌ TA125 file not found"
+          echo "❌ TA125 JSON file not found in final check"
         fi
         
-        echo "🌐 TA125 Endpoint: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+        echo ""
+        echo "🌐 API Endpoints:"
+        echo "   📊 JSON Data: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+        echo "   🏠 Website: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/"
+        echo ""
         echo "📱 Ready for Flutter app integration!"
+        echo "🔄 Next update: Tomorrow at 02:00 UTC"
+        echo ""
+        
+    - name: 📝 Create Deployment Artifact
+      if: success()
+      run: |
+        # Create a summary file for the deployment
+        cat > deployment-summary.txt << EOF
+TA125 Deployment Summary
+========================
+Date: $(date -u)
+Status: Success ✅
+API URL: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json
+Website: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/
+
+$(python -c "
+import json
+try:
+    with open('public/ta125_ohlcv_latest.json', 'r') as f:
+        data = json.load(f)
+    print(f'Symbols: {data.get(\"successful_symbols\", 0)}/{data.get(\"total_symbols\", 0)}')
+    print(f'Success Rate: {(data.get(\"successful_symbols\", 0)/data.get(\"total_symbols\", 1)*100):.1f}%')
+except:
+    print('Data summary unavailable')
+")
+EOF
+        
+    - name: 📤 Upload Deployment Summary
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: ta125-deployment-summary
+        path: |
+          public/ta125_ohlcv_latest.json
+          deployment-summary.txt
+        retention-days: 7
