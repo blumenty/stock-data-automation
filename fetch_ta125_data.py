@@ -25,40 +25,40 @@ TIMEOUT = 30
 TA125_SYMBOLS = [
     # Financial (13)
     'FIBI.TA', 'DSCT.TA', 'MIZR.TA', 'LUMI.TA', 'YAHD.TA', 'POLI.TA', 'ARVL.TA',
-    'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
+  #  'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
     
     # Technology (20)
-    'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA', 'NYAX.TA',
-    'ONE.TA', 'SPNS.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA', 'MGIC.TA', 'TLSY.TA',
-    'MLTM.TA', 'NXSN.TA', 'PRTC.TA', 'BEZQ.TA', 'PTNR.TA', 'CEL.TA',
+ #   'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA', 'NYAX.TA',
+ #   'ONE.TA', 'SPNS.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA', 'MGIC.TA', 'TLSY.TA',
+ #   'MLTM.TA', 'NXSN.TA', 'PRTC.TA', 'BEZQ.TA', 'PTNR.TA', 'CEL.TA',
     
     # Real Estate (22)
-    'AZRG.TA', 'MLSR.TA', 'BIG.TA', 'ALHE.TA', 'ARPT.TA', 'FTAL.TA', 'MVNE.TA',
-    'AURA.TA', 'AZRM.TA', 'GVYM.TA', 'GCT.TA', 'ARGO.TA', 'SLARL.TA', 'AFRE.TA',
-    'RIT1.TA', 'SMT.TA', 'ISRO.TA', 'ISCN.TA', 'MGOR.TA', 'BLSR.TA', 'CRSR.TA',
-    'ELCRE.TA',
+ #   'AZRG.TA', 'MLSR.TA', 'BIG.TA', 'ALHE.TA', 'ARPT.TA', 'FTAL.TA', 'MVNE.TA',
+ #   'AURA.TA', 'AZRM.TA', 'GVYM.TA', 'GCT.TA', 'ARGO.TA', 'SLARL.TA', 'AFRE.TA',
+ #   'RIT1.TA', 'SMT.TA', 'ISRO.TA', 'ISCN.TA', 'MGOR.TA', 'BLSR.TA', 'CRSR.TA',
+ #   'ELCRE.TA',
     
     # Energy (20)
-    'NWMD.TA', 'ORA.TA', 'DLEKG.TA', 'OPCE.TA', 'NVPT.TA', 'ENLT.TA', 'ENOG.TA',
-    'ENRG.TA', 'PAZ.TA', 'ISRA.TA', 'RATI.TA', 'TMRP.TA', 'ORL.TA', 'DORL.TA',
-    'DRAL.TA', 'MSKE.TA', 'BEZN.TA', 'SBEN.TA', 'NOFR.TA', 'DUNI.TA',
+ #   'NWMD.TA', 'ORA.TA', 'DLEKG.TA', 'OPCE.TA', 'NVPT.TA', 'ENLT.TA', 'ENOG.TA',
+ #   'ENRG.TA', 'PAZ.TA', 'ISRA.TA', 'RATI.TA', 'TMRP.TA', 'ORL.TA', 'DORL.TA',
+ #   'DRAL.TA', 'MSKE.TA', 'BEZN.TA', 'SBEN.TA', 'NOFR.TA', 'DUNI.TA',
     
     # Insurance (8)
-    'PHOE.TA', 'IDIN.TA', 'MISH.TA', 'BCOM.TA', 'VRDS.TA', 'TDRN.TA', 'PTBL.TA',
-    'WLFD.TA',
+ #   'PHOE.TA', 'IDIN.TA', 'MISH.TA', 'BCOM.TA', 'VRDS.TA', 'TDRN.TA', 'PTBL.TA',
+ #   'WLFD.TA',
     
     # Retail & Consumer (12)
-    'SAE.TA', 'RMLI.TA', 'FOX.TA', 'YHNF.TA', 'RTLS.TA', 'OPK.TA', 'BWAY.TA',
-    'BYND.TA', 'SPNS.TA', 'MGDL.TA', 'CAST.TA', 'LAPD.TA',
+ #   'SAE.TA', 'RMLI.TA', 'FOX.TA', 'YHNF.TA', 'RTLS.TA', 'OPK.TA', 'BWAY.TA',
+ #   'BYND.TA', 'SPNS.TA', 'MGDL.TA', 'CAST.TA', 'LAPD.TA',
     
     # Healthcare (10)
-    'FIVR.TA', 'MDCO.TA', 'CBRT.TA', 'NVLS.TA', 'CFCO.TA', 'RDHL.TA',
-    'NURO.TA', 'KAMN.TA', 'MTDS.TA', 'NVLG.TA',
+ #   'FIVR.TA', 'MDCO.TA', 'CBRT.TA', 'NVLS.TA', 'CFCO.TA', 'RDHL.TA',
+ #   'NURO.TA', 'KAMN.TA', 'MTDS.TA', 'NVLG.TA',
     
     # Construction & Industrial (20)
-    'SNIF.TA', 'SHNY.TA', 'AFCON.TA', 'SOLB.TA', 'ELCO.TA', 'DANR.TA', 'GMUL.TA',
-    'EMCO.TA', 'ARKO.TA', 'ARYT.TA', 'PLSN.TA', 'PLRM.TA', 'ACKR.TA', 'ICL.TA',
-    'INRM.TA', 'BNRG.TA', 'MRHL.TA'
+ #   'SNIF.TA', 'SHNY.TA', 'AFCON.TA', 'SOLB.TA', 'ELCO.TA', 'DANR.TA', 'GMUL.TA',
+ #   'EMCO.TA', 'ARKO.TA', 'ARYT.TA', 'PLSN.TA', 'PLRM.TA', 'ACKR.TA', 'ICL.TA',
+ #   'INRM.TA', 'BNRG.TA', 'MRHL.TA'
 ]
 
 # User agents for rotation (same as Flutter app)
