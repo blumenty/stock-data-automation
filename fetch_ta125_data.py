@@ -132,7 +132,7 @@ def main():
     logger.info(f"📊 Total symbols: {len(TA125_SYMBOLS)}")
     
     # Get API key
-    api_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+    api_key = os.getenv('3YFYJZTLKT2VIKWF')
     
     if not api_key:
         logger.error("❌ ALPHA_VANTAGE_API_KEY environment variable not found!")
