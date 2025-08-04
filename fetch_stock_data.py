@@ -122,18 +122,33 @@ TA125_SYMBOLS = [
 def check_rate_limit_status():
     """Check if we're currently rate limited by Yahoo Finance"""
     try:
-        test_url = "https://query1.finance.yahoo.com/v1/test/getcrumb"
-        response = requests.get(test_url, timeout=10)
+        # Try multiple endpoints to get a better read on rate limiting
+        test_urls = [
+            "https://query1.finance.yahoo.com/v1/test/getcrumb",
+            "https://query2.finance.yahoo.com/v1/test/getcrumb"
+        ]
         
-        if response.status_code == 429:
-            logger.warning("🚫 Currently rate limited by Yahoo Finance (HTTP 429)")
-            return False
-        elif response.status_code == 200:
-            logger.info("✅ Yahoo Finance API accessible")
-            return True
-        else:
-            logger.warning(f"⚠️ Unexpected status from Yahoo Finance: {response.status_code}")
-            return True  # Assume we can proceed
+        for url in test_urls:
+            try:
+                response = requests.get(url, timeout=15)
+                
+                if response.status_code == 429:
+                    logger.warning(f"🚫 Rate limited on {url}")
+                    continue
+                elif response.status_code == 200:
+                    logger.info(f"✅ Yahoo Finance API accessible via {url}")
+                    return True
+                else:
+                    logger.warning(f"⚠️ Status {response.status_code} from {url}")
+                    
+            except Exception as e:
+                logger.warning(f"Error testing {url}: {e}")
+                continue
+        
+        # If all endpoints failed, we're likely rate limited
+        logger.warning("🚫 All test endpoints failed - likely rate limited")
+        logger.info("🎯 Will try to proceed with extra caution and longer delays...")
+        return "proceed_carefully"  # Special flag to proceed but with extreme caution
             
     except Exception as e:
         logger.warning(f"Could not check rate limit status: {e}")
@@ -294,7 +309,9 @@ def update_market_data(symbols: List[str], market_name: str, batch_size: int = 2
     logger.info(f"🚀 Starting data update for {market_name} ({len(symbols)} symbols)")
     
     # Check rate limit status first
-    if not check_rate_limit_status():
+    rate_limit_status = check_rate_limit_status()
+    
+    if rate_limit_status == False:
         logger.error("❌ Currently rate limited. Please try again later or use a VPN.")
         return {
             "last_updated": datetime.now().isoformat(),
@@ -305,6 +322,12 @@ def update_market_data(symbols: List[str], market_name: str, batch_size: int = 2
             "error": "Rate limited by Yahoo Finance",
             "data": {}
         }
+    elif rate_limit_status == "proceed_carefully":
+        logger.warning("⚠️ Potential rate limiting detected - proceeding with extreme caution")
+        batch_size = min(5, batch_size)  # Very small batches
+        base_delay = 10  # Longer delays
+    else:
+        base_delay = 3
     
     # Ensure public directory exists
     os.makedirs("public", exist_ok=True)
@@ -343,13 +366,13 @@ def update_market_data(symbols: List[str], market_name: str, batch_size: int = 2
                 failed_symbols.append(symbol)
                 logger.warning(f"❌ {symbol}: Failed to fetch data")
             
-            # Random delay between symbols (1-3 seconds)
-            delay = random.uniform(1, 3)
+            # Longer delays if we detected potential rate limiting
+            delay = random.uniform(base_delay, base_delay * 2)
             time.sleep(delay)
         
-        # Longer pause between batches (5-10 seconds)
+        # Longer pause between batches
         if batch_end < len(symbols):
-            batch_delay = random.uniform(5, 10)
+            batch_delay = random.uniform(base_delay * 2, base_delay * 4)
             logger.info(f"⏸️ Batch complete. Waiting {batch_delay:.1f}s before next batch...")
             time.sleep(batch_delay)
         
