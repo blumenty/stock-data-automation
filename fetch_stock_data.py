@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # Alpha Vantage API (Free tier: 500 calls/day, 5 calls/minute)
-ALPHA_VANTAGE_API_KEY = "demo"  # Replace with your API key
+ALPHA_VANTAGE_API_KEY = "COC3WBG915AT0OYZ"  # Replace with your API key
 BASE_URL = "https://www.alphavantage.co/query"
 
 # Your symbol lists
@@ -130,3 +130,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
