@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .api-endpoint {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .endpoint-title {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        .endpoint-url {
+            color: #007bff;
+            word-break: break-all;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .status.online {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .last-updated {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin-top: 30px;
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 Stock Data API</h1>
+        
+        <div class="status online">
+            ✅ API is online and serving fresh stock data
+        </div>
+
+        <div class="note">
+            <strong>📊 Data Info:</strong> This API provides the last 50 trading days of OHLCV data for SP500 and TA125 stocks. Data is updated daily at 02:00 UTC.
+        </div>
+
+        <h2>Available Endpoints:</h2>
+
+        <div class="api-endpoint">
+            <div class="endpoint-title">SP500 Stock Data</div>
+            <div class="endpoint-url">
+                <a href="./sp500_ohlcv_latest.json" target="_blank">
+                    sp500_ohlcv_latest.json
+                </a>
+            </div>
+        </div>
+
+        <div class="api-endpoint">
+            <div class="endpoint-title">TA125 Stock Data</div>
+            <div class="endpoint-url">
+                <a href="./ta125_ohlcv_latest.json" target="_blank">
+                    ta125_ohlcv_latest.json
+                </a>
+            </div>
+        </div>
+
+        <h2>📋 Usage Examples:</h2>
+        
+        <div class="api-endpoint">
+            <div class="endpoint-title">Flutter/Dart HTTP Request</div>
+            <pre style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto;">
+final response = await http.get(
+  Uri.parse('https://YOUR_PROJECT.web.app/sp500_ohlcv_latest.json')
+);
+final data = json.decode(response.body);</pre>
+        </div>
+
+        <div class="api-endpoint">
+            <div class="endpoint-title">JavaScript Fetch</div>
+            <pre style="background: #2d3748; color: #e2e8f0; padding: 15px; border-radius: 5px; overflow-x: auto;">
+fetch('https://YOUR_PROJECT.web.app/ta125_ohlcv_latest.json')
+  .then(response => response.json())
+  .then(data => console.log(data));</pre>
+        </div>
+
+        <div class="last-updated" id="lastUpdated">
+            Data updates daily at 02:00 UTC
+        </div>
+    </div>
+
+    <script>
+        // Check if JSON files exist and show last updated time
+        fetch('./sp500_ohlcv_latest.json')
+            .then(response => response.json())
+            .then(data => {
+                if (data.last_updated) {
+                    const lastUpdated = new Date(data.last_updated);
+                    document.getElementById('lastUpdated').innerHTML = 
+                        `Last updated: ${lastUpdated.toLocaleString()}`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('lastUpdated').innerHTML = 
+                    'Data files not found - run the Python script first';
+            });
+    </script>
+</body>
+</html>
