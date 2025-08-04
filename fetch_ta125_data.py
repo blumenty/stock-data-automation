@@ -144,7 +144,7 @@ def fetch_yahoo_finance_data(symbol: str, days: int = 50) -> Optional[List[Dict[
                     return process_yahoo_response(symbol, data)
                 elif response.status_code in [503, 429]:
                     if attempt < max_retries - 1:
-                        backoff_delay = 2 ** attempt + random.uniform(1, 3)
+                        backoff_delay = 2 ** attempt + random.uniform(2, 5)
                         logger.warning(f"Rate limited ({response.status_code}), retrying in {backoff_delay:.1f}s...")
                         time.sleep(backoff_delay)
                         continue
@@ -154,7 +154,7 @@ def fetch_yahoo_finance_data(symbol: str, days: int = 50) -> Optional[List[Dict[
                     
             except Exception as e:
                 if attempt < max_retries - 1:
-                    backoff_delay = 2 ** attempt + random.uniform(1, 3)
+                    backoff_delay = 2 ** attempt + random.uniform(2, 5)
                     logger.warning(f"Request failed ({e}), retrying in {backoff_delay:.1f}s...")
                     time.sleep(backoff_delay)
                     continue
