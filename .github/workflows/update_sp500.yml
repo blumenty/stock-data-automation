@@ -48,7 +48,7 @@ jobs:
           exit 1
         fi
       env:
-        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY_SP500 }}
     
     - name: 🔧 Setup Node.js for Firebase
       uses: actions/setup-node@v4
