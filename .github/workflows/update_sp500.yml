@@ -1,9 +1,9 @@
 name: 🇺🇸 Update SP500 Data
 
 on:
-  # Run daily at 02:10 UTC (10 minutes after TA125 to avoid conflicts)
+  # Run daily at 02:00 UTC
   schedule:
-    - cron: '0 02 * * *'
+    - cron: '0 2 * * *'
   
   # Allow manual trigger
   workflow_dispatch:
