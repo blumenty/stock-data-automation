@@ -1,0 +1,167 @@
+name: 📈 Update Stock Data & Deploy
+
+on:
+  # Run daily at 02:00 UTC (after market close)
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger for testing and one-time runs
+  workflow_dispatch:
+    inputs:
+      market:
+        description: 'Which market to update'
+        required: false
+        default: 'both'
+        type: choice
+        options:
+        - both
+        - sp500
+        - ta125
+      
+      batch_size:
+        description: 'Batch size (smaller = slower but safer)'
+        required: false
+        default: '20'
+        type: string
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎️ Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: 📦 Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🔍 Check Yahoo Finance Status
+      run: |
+        echo "🔍 Testing Yahoo Finance connectivity..."
+        python -c "
+        import requests
+        try:
+            response = requests.get('https://query1.finance.yahoo.com/v1/test/getcrumb', timeout=10)
+            if response.status_code == 429:
+                print('⚠️ Rate limited - will proceed with caution')
+            elif response.status_code == 200:
+                print('✅ Yahoo Finance API accessible')
+            else:
+                print(f'ℹ️ Status: {response.status_code}')
+        except Exception as e:
+            print(f'⚠️ Connection test failed: {e}')
+        "
+    
+    - name: 📊 Fetch Stock Data
+      run: |
+        echo "🚀 Starting stock data fetch process..."
+        echo "📅 Current time: $(date -u)"
+        echo "🖥️ Runner IP info:"
+        curl -s https://httpbin.org/ip || echo "Could not get IP info"
+        
+        # Create public directory
+        mkdir -p public
+        
+        # Run the stock data fetcher
+        python fetch_stock_data.py
+        
+        echo "📋 Generated files:"
+        ls -la public/
+        
+        # Check file sizes
+        if [ -f "public/sp500_ohlcv_latest.json" ]; then
+          echo "📈 SP500 file size: $(du -h public/sp500_ohlcv_latest.json)"
+          echo "📊 SP500 symbols count: $(python -c "import json; data=json.load(open('public/sp500_ohlcv_latest.json')); print(f'{data[\"successful_symbols\"]}/{data[\"total_symbols\"]} symbols')")"
+        fi
+        
+        if [ -f "public/ta125_ohlcv_latest.json" ]; then
+          echo "📈 TA125 file size: $(du -h public/ta125_ohlcv_latest.json)"
+          echo "📊 TA125 symbols count: $(python -c "import json; data=json.load(open('public/ta125_ohlcv_latest.json')); print(f'{data[\"successful_symbols\"]}/{data[\"total_symbols\"]} symbols')")"
+        fi
+      
+    - name: 🔧 Setup Node.js for Firebase
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: 📦 Install Firebase CLI
+      run: |
+        npm install -g firebase-tools
+        firebase --version
+    
+    - name: 🚀 Deploy to Firebase Hosting
+      run: |
+        echo "🚀 Deploying to Firebase Hosting..."
+        firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
+        
+        echo "✅ Deployment complete!"
+        echo "🌐 Your API is live at: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app"
+        
+        # Verify deployment
+        sleep 10
+        echo "🔍 Verifying deployment..."
+        curl -s "https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/sp500_ohlcv_latest.json" | head -c 200 || echo "Could not verify SP500 file"
+        curl -s "https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json" | head -c 200 || echo "Could not verify TA125 file"
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    
+    - name: 📋 Generate Summary Report
+      if: always()
+      run: |
+        echo "📊 DEPLOYMENT SUMMARY" 
+        echo "===================="
+        echo "⏰ Completed at: $(date -u)"
+        echo "🖥️ Runner: ubuntu-latest"
+        
+        if [ -f "public/sp500_ohlcv_latest.json" ]; then
+          python -c "
+        import json
+        try:
+          with open('public/sp500_ohlcv_latest.json', 'r') as f:
+            data = json.load(f)
+            print(f'📈 SP500: {data[\"successful_symbols\"]}/{data[\"total_symbols\"]} symbols ({data[\"successful_symbols\"]/data[\"total_symbols\"]*100:.1f}%)')
+            if data.get('failed_symbols'):
+              print(f'❌ SP500 Failed: {len(data[\"failed_symbols\"])} symbols')
+        except Exception as e:
+          print(f'❌ Error reading SP500 file: {e}')
+        "
+        fi
+        
+        if [ -f "public/ta125_ohlcv_latest.json" ]; then
+          python -c "
+        import json
+        try:
+          with open('public/ta125_ohlcv_latest.json', 'r') as f:
+            data = json.load(f)
+            print(f'📈 TA125: {data[\"successful_symbols\"]}/{data[\"total_symbols\"]} symbols ({data[\"successful_symbols\"]/data[\"total_symbols\"]*100:.1f}%)')
+            if data.get('failed_symbols'):
+              print(f'❌ TA125 Failed: {len(data[\"failed_symbols\"])} symbols')
+        except Exception as e:
+          print(f'❌ Error reading TA125 file: {e}')
+        "
+        fi
+        
+        echo "🌐 API Endpoints:"
+        echo "   https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/sp500_ohlcv_latest.json"
+        echo "   https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+    
+    - name: 💬 Notify on Failure
+      if: failure()
+      run: |
+        echo "❌ WORKFLOW FAILED"
+        echo "=================="
+        echo "⏰ Failed at: $(date -u)"
+        echo "🔍 Check the logs above for details"
+        echo "💡 Common issues:"
+        echo "   • Yahoo Finance rate limiting"
+        echo "   • Firebase authentication issues"
+        echo "   • Network connectivity problems"
