@@ -3,7 +3,7 @@ name: 🇮🇱 Update TA125 Data
 on:
   # Run daily at 02:00 UTC
   schedule:
-    - cron: '0 16 * * *'
+    - cron: '0 2 * * *'
   
   # Allow manual trigger
   workflow_dispatch:
@@ -27,11 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
         
-    - name: 🇮🇱 Fetch TA125 Stock Data
+    - name: 🇮🇱 Fetch TA125 Stock Data from TASE
       run: |
-        echo "🇮🇱 Starting TA125 data fetch..."
+        echo "🇮🇱 Starting TA125 data fetch from TASE API sources..."
         echo "📅 Current time: $(date -u)"
-        echo "📊 Expected duration: ~27 minutes for ~125 symbols"
+        echo "📊 Using TASE API + Yahoo Finance Israel fallback"
         
         mkdir -p public
         python fetch_ta125_data.py
@@ -47,7 +47,7 @@ jobs:
           exit 1
         fi
       env:
-        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY_TA125 }}
+        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
     
     - name: 🔧 Setup Node.js for Firebase
       uses: actions/setup-node@v4
