@@ -1,0 +1,101 @@
+name: 🇮🇱 Update TA125 Data
+
+on:
+  # Run daily at 02:00 UTC
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  update-ta125:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60  # 1 hour timeout
+    
+    steps:
+    - name: 🛎️ Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+        
+    - name: 🇮🇱 Fetch TA125 Stock Data
+      run: |
+        echo "🇮🇱 Starting TA125 data fetch..."
+        echo "📅 Current time: $(date -u)"
+        echo "📊 Expected duration: ~27 minutes for ~125 symbols"
+        
+        mkdir -p public
+        python fetch_ta125_data.py
+        
+        echo "📋 TA125 files generated:"
+        ls -la public/
+        
+        if [ -f "public/ta125_ohlcv_latest.json" ]; then
+          echo "✅ TA125 file created successfully"
+          echo "📊 File size: $(du -h public/ta125_ohlcv_latest.json)"
+        else
+          echo "❌ TA125 file not found!"
+          exit 1
+        fi
+      env:
+        ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+    
+    - name: 🔧 Setup Node.js for Firebase
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: 📦 Install Firebase CLI
+      run: npm install -g firebase-tools
+    
+    - name: 🚀 Deploy TA125 Data to Firebase
+      run: |
+        echo "🚀 Deploying TA125 data to Firebase..."
+        firebase deploy --only hosting --token "$FIREBASE_TOKEN" --non-interactive
+        
+        echo "✅ TA125 deployment complete!"
+        echo "🌐 TA125 API: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    
+    - name: 📊 TA125 Summary Report
+      if: always()
+      run: |
+        echo "📊 TA125 DEPLOYMENT SUMMARY"
+        echo "=========================="
+        echo "⏰ Completed at: $(date -u)"
+        echo "🇮🇱 Market: TA125 (TASE)"
+        
+        if [ -f "public/ta125_ohlcv_latest.json" ]; then
+          python -c "
+        import json
+        try:
+          with open('public/ta125_ohlcv_latest.json', 'r') as f:
+            data = json.load(f)
+            total = data.get('total_symbols', 0)
+            success = data.get('successful_symbols', 0) 
+            rate = (success/total*100) if total > 0 else 0
+            print(f'📈 TA125: {success}/{total} symbols ({rate:.1f}% success)')
+            print(f'💱 Currency: {data.get(\"currency\", \"ILS\")}')
+            print(f'🏢 Exchange: {data.get(\"exchange\", \"TASE\")}')
+            if data.get('failed_symbols'):
+              failed_count = len(data['failed_symbols'])
+              print(f'❌ Failed: {failed_count} symbols')
+        except Exception as e:
+          print(f'❌ Error reading TA125 file: {e}')
+        "
+        else
+          echo "❌ TA125 file not found"
+        fi
+        
+        echo "🌐 TA125 Endpoint: https://${{ secrets.FIREBASE_PROJECT_ID }}.web.app/ta125_ohlcv_latest.json"
+        echo "📱 Ready for Flutter app integration!"
