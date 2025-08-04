@@ -23,7 +23,7 @@ BASE_URL = "https://www.alphavantage.co/query"
 
 # Complete TA125 symbols from your ta125_stocks.dart
 TA125_SYMBOLS = [
-    # Financial (13)
+# Financial (13)
     'FIBI.TA', 'DSCT.TA', 'MIZR.TA', 'LUMI.TA', 'YAHD.TA', 'POLI.TA', 'ARVL.TA',
     'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
     
@@ -48,17 +48,17 @@ TA125_SYMBOLS = [
     'WLFD.TA',
     
     # Healthcare (10)
-    'FIVR.TA', 'MDCO.TA', 'CBRT.TA', 'NVLS.TA', 'CFCO.TA', 'RDHL.TA',
-    'NURO.TA', 'KAMN.TA', 'MTDS.TA', 'NVLG.TA',
+    'TEVA.TA', 'FIVR.TA', 'MDCO.TA', 'CBRT.TA', 'NVLS.TA', 'CFCO.TA', 'RDHL.TA',
+    'NURO.TA', 'ALHE.TA', 'KAMN.TA',
     
     # Retail & Consumer (12)
     'SAE.TA', 'RMLI.TA', 'FOX.TA', 'YHNF.TA', 'RTLS.TA', 'OPK.TA', 'BWAY.TA',
-    'BYND.TA', 'MAXO.TA', 'CAST.TA', 'LAPD.TA', 'SODA.TA',
+    'BYND.TA', 'SPNS.TA', 'MGDL.TA', 'CAST.TA', 'LAPD.TA',
     
     # Construction & Industrial (20)
     'SNIF.TA', 'SHNY.TA', 'AFCON.TA', 'SOLB.TA', 'ELCO.TA', 'DANR.TA', 'GMUL.TA',
-    'EMCO.TA', 'ARKO.TA', 'ARYT.TA', 'PLSN.TA', 'PLRM.TA', 'ACKR.TA', 'ICL.TA',
-    'INRM.TA', 'BNRG.TA', 'MRHL.TA', 'NVLG.TA', 'MRHL.TA', 'INRM.TA'
+    'EMCO.TA', 'ARKO.TA', 'ISCD.TA', 'BYND.TA', 'SPNS.TA', 'MGDL.TA', 'ARYT.TA',
+    'PLSN.TA', 'PLRM.TA', 'ACKR.TA', 'ICL.TA'
 ]
 
 def fetch_stock_data_alphavantage(symbol: str, api_key: str) -> Optional[List[Dict[str, Any]]]:
