@@ -59,30 +59,15 @@ class StockDataAutomation:
             raise
     
     def download_market_data(self, symbols: List[str], market_name: str) -> Dict[str, List[StockData]]:
-        """Download data for all symbols in a market"""
+        """Download data for all symbols in a market using the exact same logic as Dart"""
         log.info(f'🚀 Starting {market_name} download for {len(symbols)} symbols...')
         
-        market_data = {}
-        successful_downloads = 0
+        # Use the enhanced method with breaks (same as Dart)
+        market_data = self.yahoo_service.fetch_multiple_stocks_with_breaks(symbols, days=50)
         
-        for i, symbol in enumerate(symbols):
-            try:
-                log.info(f'📊 Downloading {symbol} ({i+1}/{len(symbols)})')
-                
-                # Fetch last 50 days of data (same as your requirement)
-                stock_data = self.yahoo_service.fetch_stock_data(symbol, days=50)
-                
-                if stock_data and len(stock_data) > 0:
-                    market_data[symbol] = stock_data
-                    successful_downloads += 1
-                    log.info(f'✅ Downloaded {len(stock_data)} days for {symbol}')
-                else:
-                    log.warning(f'⚠️ No data received for {symbol}')
-                
-            except Exception as e:
-                log.error(f'❌ Error downloading data for {symbol}: {e}')
-        
+        successful_downloads = len(market_data)
         log.info(f'✅ {market_name} download complete: {successful_downloads}/{len(symbols)} symbols successful')
+        
         return market_data
     
     def run_daily_download(self):
