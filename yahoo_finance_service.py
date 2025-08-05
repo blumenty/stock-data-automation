@@ -37,13 +37,13 @@ class YahooFinanceService:
     TIMEOUT = 30
     
     # Anti-detection measures (MORE CONSERVATIVE)
-    MIN_REQUEST_DELAY = 2.0   # 2000ms (increased from 500ms)
-    MAX_REQUEST_DELAY = 5.0   # 5000ms (increased from 2000ms)
-    RETRY_BACKOFF_BASE = 5    # 5 seconds (increased from 2s)
+    MIN_REQUEST_DELAY = 4.0   # 2000ms (increased from 500ms)
+    MAX_REQUEST_DELAY = 8.0   # 5000ms (increased from 2000ms)
+    RETRY_BACKOFF_BASE = 10    # 5 seconds (increased from 2s)
     MAX_RETRIES = 3
     
     # Rate limiting (MORE CONSERVATIVE)
-    MAX_REQUESTS_PER_MINUTE = 15  # Reduced from 30 to 15
+    MAX_REQUESTS_PER_MINUTE = 6  # Reduced from 30 to 15
     
     # User agents for rotation (exact same as Dart)
     USER_AGENTS = [
