@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Data Automation - Public CSV Files</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+        }
+        .card h3 {
+            margin: 0 0 1rem 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card-icon {
+            font-size: 1.5rem;
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .success {
+            color: #10b981;
+        }
+        .api-docs {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+        .api-docs h3 {
+            margin-top: 0;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Stock Data Automation</h1>
+        <p>Real-time TA-125 and S&P 500 stock data updated daily at 2:00 AM UTC</p>
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3><span class="card-icon">🇮🇱</span>TA-125 Data</h3>
+            <p>Tel Aviv Stock Exchange TA-125 Index data with OHLCV information for the last 50 trading days.</p>
+            <p><strong>Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume</p>
+            <p><strong>Update:</strong> Daily at 2:00 AM UTC</p>
+            <a href="data/Shazam-Stock-Info-TA125.csv" class="download-btn" download>
+                📥 Download TA-125 CSV
+            </a>
+        </div>
+
+        <div class="card">
+            <h3><span class="card-icon">🇺🇸</span>S&P 500 Data</h3>
+            <p>S&P 500 Index stocks data with OHLCV information for the last 50 trading days.</p>
+            <p><strong>Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume</p>
+            <p><strong>Update:</strong> Daily at 2:00 AM UTC</p>
+            <a href="data/Shazam-Stock-Info-SP500.csv" class="download-btn" download>
+                📥 Download S&P 500 CSV
+            </a>
+        </div>
+    </div>
+
+    <div class="status">
+        <h3>📈 Download Status</h3>
+        <div id="status-content">
+            <div class="status-item">
+                <span>Status:</span>
+                <span class="status-value" id="status">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>Last Update:</span>
+                <span class="status-value" id="last-update">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>TA-125 Symbols:</span>
+                <span class="status-value" id="ta125-count">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>S&P 500 Symbols:</span>
+                <span class="status-value" id="sp500-count">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>Download Duration:</span>
+                <span class="status-value" id="duration">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-docs">
+        <h3>🔗 API Access</h3>
+        <p>Access the CSV files programmatically:</p>
+        
+        <h4>Direct URLs:</h4>
+        <div class="code-block">
+# TA-125 Data
+https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv
+
+# S&P 500 Data  
+https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-SP500.csv
+
+# Status JSON
+https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/download_status.json
+        </div>
+
+        <h4>Python Example:</h4>
+        <div class="code-block">
+import pandas as pd
+
+# Load TA-125 data
+ta125_url = "https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv"
+ta125_df = pd.read_csv(ta125_url)
+
+# Load S&P 500 data
+sp500_url = "https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-SP500.csv"  
+sp500_df = pd.read_csv(sp500_url)
+
+print(f"TA-125 records: {len(ta125_df)}")
+print(f"S&P 500 records: {len(sp500_df)}")
+        </div>
+
+        <h4>JavaScript Example:</h4>
+        <div class="code-block">
+// Fetch TA-125 data
+fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv')
+  .then(response => response.text())
+  .then(csvData => {
+    console.log('TA-125 CSV data:', csvData);
+    // Parse CSV data here
+  });
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>🤖 Powered by GitHub Actions • 📊 Data from Yahoo Finance • ⚡ Updated automatically every day</p>
+        <p><strong>Disclaimer:</strong> This data is for informational purposes only. Not investment advice.</p>
+    </div>
+
+    <script>
+        // Load status from JSON file
+        fetch('data/download_status.json')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').textContent = data.status === 'success' ? '✅ Success' : '❌ Failed';
+                document.getElementById('status').className = data.status === 'success' ? 'status-value success' : 'status-value';
+                
+                const lastUpdate = new Date(data.last_update);
+                document.getElementById('last-update').textContent = lastUpdate.toLocaleString();
+                document.getElementById('ta125-count').textContent = data.ta125_symbols || 'N/A';
+                document.getElementById('sp500-count').textContent = data.sp500_symbols || 'N/A';
+                
+                const duration = Math.round(data.duration_seconds || 0);
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                document.getElementById('duration').textContent = `${minutes}m ${seconds}s`;
+            })
+            .catch(error => {
+                console.error('Error loading status:', error);
+                document.getElementById('status').textContent = '❓ Unknown';
+            });
+    </script>
+</body>
+</html>
