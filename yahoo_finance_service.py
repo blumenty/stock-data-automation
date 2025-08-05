@@ -36,14 +36,14 @@ class YahooFinanceService:
     BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
     TIMEOUT = 30
     
-    # Anti-detection measures (exact same as Dart)
-    MIN_REQUEST_DELAY = 0.5  # 500ms
-    MAX_REQUEST_DELAY = 2.0  # 2000ms
-    RETRY_BACKOFF_BASE = 2   # 2 seconds
+    # Anti-detection measures (MORE CONSERVATIVE)
+    MIN_REQUEST_DELAY = 2.0   # 2000ms (increased from 500ms)
+    MAX_REQUEST_DELAY = 5.0   # 5000ms (increased from 2000ms)
+    RETRY_BACKOFF_BASE = 5    # 5 seconds (increased from 2s)
     MAX_RETRIES = 3
     
-    # Rate limiting (exact same as Dart)
-    MAX_REQUESTS_PER_MINUTE = 30
+    # Rate limiting (MORE CONSERVATIVE)
+    MAX_REQUESTS_PER_MINUTE = 15  # Reduced from 30 to 15
     
     # User agents for rotation (exact same as Dart)
     USER_AGENTS = [
@@ -287,10 +287,10 @@ class YahooFinanceService:
         return stock_data_list
     
     def fetch_multiple_stocks_with_breaks(self, symbols: List[str], days: int = 50) -> Dict[str, List[StockData]]:
-        """Fetch multiple stocks with extended breaks (exact same as Dart logic)"""
+        """Fetch multiple stocks with extended breaks (EXTRA CONSERVATIVE)"""
         results = {}
         
-        log.info(f'📊 Fetching data for {len(symbols)} stocks with anti-detection...')
+        log.info(f'📊 Fetching data for {len(symbols)} stocks with conservative rate limiting...')
         
         # Shuffle symbols to appear more human-like (same as Dart)
         shuffled_symbols = symbols.copy()
@@ -306,11 +306,17 @@ class YahooFinanceService:
             else:
                 log.warning(f'⚠️ No data received for {symbol}')
             
-            # Add extra delay every 10 requests (exact same as Dart)
-            if (i + 1) % 10 == 0:
-                extra_delay = 3 + random.randint(0, 4)  # 3-7 seconds
+            # Add extra delay every 5 requests instead of 10 (MORE CONSERVATIVE)
+            if (i + 1) % 5 == 0:
+                extra_delay = 10 + random.randint(0, 10)  # 10-20 seconds
                 log.info(f'😴 Taking extended break ({extra_delay}s) after {i + 1} requests')
                 time.sleep(extra_delay)
+            
+            # Add small delay between every request (EXTRA SAFETY)
+            elif i < len(shuffled_symbols) - 1:  # Don't delay after last symbol
+                small_delay = 3 + random.randint(0, 3)  # 3-6 seconds
+                log.info(f'⏱️ Brief pause ({small_delay}s) before next symbol')
+                time.sleep(small_delay)
         
         log.info(f'✅ Successfully fetched data for {len(results)}/{len(symbols)} stocks')
         return results
