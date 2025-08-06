@@ -144,6 +144,7 @@ class YahooFinanceService:
             else:
                 current -= timedelta(days=1)
     
+    
     def _handle_rate_limiting(self):
         """Handle rate limiting response (exact same as Dart)"""
         # Increase delays for subsequent requests
