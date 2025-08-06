@@ -37,9 +37,9 @@ class YahooFinanceService:
     TIMEOUT = 30
     
     # Anti-detection measures (MORE CONSERVATIVE)
-    MIN_REQUEST_DELAY = 10.0   # 2000ms (increased from 500ms)
-    MAX_REQUEST_DELAY = 15.0   # 5000ms (increased from 2000ms)
-    RETRY_BACKOFF_BASE = 10    # 5 seconds (increased from 2s)
+    MIN_REQUEST_DELAY = 20.0   # 2000ms (increased from 500ms)
+    MAX_REQUEST_DELAY = 25.0   # 5000ms (increased from 2000ms)
+    RETRY_BACKOFF_BASE = 15    # 5 seconds (increased from 2s)
     MAX_RETRIES = 3
     
     # Rate limiting (MORE CONSERVATIVE)
@@ -309,13 +309,13 @@ class YahooFinanceService:
             
             # Add extra delay every 5 requests instead of 10 (MORE CONSERVATIVE)
             if (i + 1) % 5 == 0:
-                extra_delay = 20 + random.randint(0, 10)  # 10-20 seconds
+                extra_delay = 30 + random.randint(0, 10)  # 10-20 seconds
                 log.info(f'😴 Taking extended break ({extra_delay}s) after {i + 1} requests')
                 time.sleep(extra_delay)
             
             # Add small delay between every request (EXTRA SAFETY)
             elif i < len(shuffled_symbols) - 1:  # Don't delay after last symbol
-                small_delay = 10 + random.randint(5, 10)  # 3-6 seconds
+                small_delay = 20 + random.randint(0, 5)  # 3-6 seconds
                 log.info(f'⏱️ Brief pause ({small_delay}s) before next symbol')
                 time.sleep(small_delay)
         
