@@ -10,7 +10,7 @@ TA125_STOCKS = [
 #    'AMOT.TA', 'EQTL.TA', 'MTAV.TA', 'ISRS.TA', 'MNIF.TA', 'TASE.TA',
 #    'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
     
-    # Technology & Healthcare
+    ## Technology & Healthcare
 #    'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA',
 #    'NYAX.TA', 'ONE.TA', 'SPNS.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA',
 #    'MGIC.TA', 'TLSY.TA', 'MLTM.TA', 'NXSN.TA', 'PRTC.TA',
