@@ -1,9 +1,9 @@
 {
-  "last_update": "2025-08-06T06:48:22.828366",
-  "start_time": "2025-08-06T06:40:42.241482",
-  "duration_seconds": 460.586884,
-  "ta125_symbols": 2,
-  "sp500_symbols": 1,
-  "total_symbols": 3,
+  "last_update": "2025-08-06T07:27:38.639743",
+  "start_time": "2025-08-06T07:12:25.558631",
+  "duration_seconds": 913.081112,
+  "ta125_symbols": 3,
+  "sp500_symbols": 2,
+  "total_symbols": 5,
   "status": "success"
 }
