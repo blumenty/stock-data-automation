@@ -309,13 +309,13 @@ class YahooFinanceService:
             
             # Add extra delay every 5 requests instead of 10 (MORE CONSERVATIVE)
             if (i + 1) % 5 == 0:
-                extra_delay = 30 + random.randint(0, 10)  # 10-20 seconds
+                extra_delay = 45 + random.randint(0, 15)  # 10-20 seconds
                 log.info(f'😴 Taking extended break ({extra_delay}s) after {i + 1} requests')
                 time.sleep(extra_delay)
             
             # Add small delay between every request (EXTRA SAFETY)
             elif i < len(shuffled_symbols) - 1:  # Don't delay after last symbol
-                small_delay = 20 + random.randint(0, 5)  # 3-6 seconds
+                small_delay = 25 + random.randint(0, 8)  # 3-6 seconds
                 log.info(f'⏱️ Brief pause ({small_delay}s) before next symbol')
                 time.sleep(small_delay)
         
