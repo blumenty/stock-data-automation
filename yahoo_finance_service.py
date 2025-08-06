@@ -37,9 +37,9 @@ class YahooFinanceService:
     TIMEOUT = 30
     
     # Anti-detection measures (MORE CONSERVATIVE)
-    MIN_REQUEST_DELAY = 2.0   # 2000ms (increased from 500ms)
-    MAX_REQUEST_DELAY = 5.0   # 5000ms (increased from 2000ms)
-    RETRY_BACKOFF_BASE = 5    # 5 seconds (increased from 2s)
+    MIN_REQUEST_DELAY = 10.0   # 2000ms (increased from 500ms)
+    MAX_REQUEST_DELAY = 15.0   # 5000ms (increased from 2000ms)
+    RETRY_BACKOFF_BASE = 10    # 5 seconds (increased from 2s)
     MAX_RETRIES = 3
     
     # Rate limiting (MORE CONSERVATIVE)
@@ -319,4 +319,5 @@ class YahooFinanceService:
                 time.sleep(small_delay)
         
         log.info(f'✅ Successfully fetched data for {len(results)}/{len(symbols)} stocks')
+
         return results
