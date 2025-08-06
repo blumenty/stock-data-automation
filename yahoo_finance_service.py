@@ -37,10 +37,10 @@ class YahooFinanceService:
     TIMEOUT = 30
     
     # Anti-detection measures (MORE CONSERVATIVE)
-    MIN_REQUEST_DELAY = 20.0   # 2000ms (increased from 500ms)
-    MAX_REQUEST_DELAY = 25.0   # 5000ms (increased from 2000ms)
-    RETRY_BACKOFF_BASE = 15    # 5 seconds (increased from 2s)
-    MAX_RETRIES = 3
+    MIN_REQUEST_DELAY = 25.0   # 2000ms (increased from 500ms)
+    MAX_REQUEST_DELAY = 30.0   # 5000ms (increased from 2000ms)
+    RETRY_BACKOFF_BASE = 20    # 5 seconds (increased from 2s)
+    MAX_RETRIES = 5
     
     # Rate limiting (MORE CONSERVATIVE)
     MAX_REQUESTS_PER_MINUTE = 15  # Reduced from 30 to 15
