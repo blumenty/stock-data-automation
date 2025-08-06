@@ -6,7 +6,8 @@ Stock Symbols - Exact same stocks as your Dart implementation
 # TA-125 Stocks (exact same as your Dart code)
 TA125_STOCKS = [
     # Banks & Financial Services
-    'DSCT.TA', 'POLI.TA', 'LUMI.TA', 'MZTF.TA', 'FIBI.TA', 'IBI.TA',
+    'DSCT.TA', 'POLI.TA', 'LUMI.TA', 
+ #   'MZTF.TA', 'FIBI.TA', 'IBI.TA',
 #    'AMOT.TA', 'EQTL.TA', 'MTAV.TA', 'ISRS.TA', 'MNIF.TA', 'TASE.TA',
 #    'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
     
@@ -47,7 +48,8 @@ TA125_STOCKS = [
 
 # S&P 500 Stocks (exact same as your Dart code) 
 SP500_STOCKS = [
-    'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA',
+    'AAPL', 'MSFT', 'GOOGL',
+    # 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA',
 #    'BRK-B', 'AVGO', 'LLY', 'WMT', 'JPM', 'UNH', 'XOM', 'ORCL',
 #    'MA', 'COST', 'HD', 'PG', 'JNJ', 'ABBV', 'NFLX', 'CRM', 'BAC',
 #    'CVX', 'KO', 'AMD', 'PEP', 'TMO', 'WFC', 'LIN', 'CSCO', 'ABT',
