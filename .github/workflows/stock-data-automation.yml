@@ -1,16 +1,16 @@
 name: Stock Data Automation
 
 on:
-  schedule:
+#  schedule:
     # Run at 23:00 AM UTC daily (adjust timezone as needed)
-    - cron: '0 23 * * *'
-  workflow_dispatch: # Allow manual trigger
-  push:
-    branches: [ main ]
-    paths:
-      - '**.py'
-      - 'requirements.txt'
-      - '.github/workflows/**.yml'
+#    - cron: '0 23 * * *'
+#  workflow_dispatch: # Allow manual trigger
+#  push:
+#    branches: [ main ]
+#    paths:
+#      - '**.py'
+#      - 'requirements.txt'
+#      - '.github/workflows/**.yml'
 
 jobs:
   download-stock-data:
@@ -66,3 +66,4 @@ jobs:
           data/Shazam-Stock-Info-SP500.csv
           data/download_status.json
         retention-days: 30
+
