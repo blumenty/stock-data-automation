@@ -1,16 +1,16 @@
 name: Stock Data Automation
 
 on:
-#  schedule:
-    # Run at 23:00 AM UTC daily (adjust timezone as needed)
-#    - cron: '0 23 * * *'
-#  workflow_dispatch: # Allow manual trigger
-#  push:
-#    branches: [ main ]
-#    paths:
-#      - '**.py'
-#      - 'requirements.txt'
-#      - '.github/workflows/**.yml'
+  schedule:
+    # Run at 2:00 AM UTC daily (Polygon.io + Yahoo Finance)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger
+  push:
+    branches: [ main ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - '.github/workflows/**.yml'
 
 jobs:
   download-stock-data:
@@ -46,6 +46,8 @@ jobs:
         wc -l data/Shazam-Stock-Info-TA125.csv || echo "TA125 file not found"
         echo "SP500 CSV rows:"
         wc -l data/Shazam-Stock-Info-SP500.csv || echo "SP500 file not found"
+        echo "Status file:"
+        cat data/download_status.json || echo "Status file not found"
         
     - name: Commit and push CSV files
       run: |
@@ -66,4 +68,3 @@ jobs:
           data/Shazam-Stock-Info-SP500.csv
           data/download_status.json
         retention-days: 30
-
