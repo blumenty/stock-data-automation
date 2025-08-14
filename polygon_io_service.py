@@ -318,7 +318,7 @@ class PolygonIOService:
             # Every 5 requests = 2 minute mandatory break (free tier limit)
             if (i + 1) % 5 == 0 and i < len(shuffled_symbols) - 1:
                 log.info(f'😴 Mandatory 2-minute break after 5 requests (free tier limit)')
-                time.sleep(120)  # 2 minutes
+                time.sleep(15)  # 2 minutes
             
             # Log progress
             if (i + 1) % 10 == 0:
@@ -363,4 +363,5 @@ class PolygonIOService:
                 'isHealthy': False,
                 'error': str(e),
                 'status': 'Disconnected',
+
             }
