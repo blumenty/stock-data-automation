@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Data Automation - Public CSV Files</title>
+    <title>Stock Data Automation - Polygon.io + Yahoo Finance</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -27,6 +27,20 @@
         .header p {
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
+        }
+        .service-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .service-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
         .cards {
             display: grid;
@@ -53,6 +67,14 @@
         }
         .card-icon {
             font-size: 1.5rem;
+        }
+        .service-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 0.75rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            font-size: 0.9rem;
         }
         .download-btn {
             display: inline-block;
@@ -91,6 +113,18 @@
         .success {
             color: #10b981;
         }
+        .service-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .service-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+        }
         .api-docs {
             background: white;
             border-radius: 12px;
@@ -122,15 +156,23 @@
 <body>
     <div class="header">
         <h1>📊 Stock Data Automation</h1>
-        <p>Real-time TA-125 and S&P 500 stock data updated daily at 2:00 AM UTC</p>
+        <p>Multi-service TA-125 and S&P 500 stock data updated daily at 2:00 AM UTC</p>
+        <div class="service-badges">
+            <div class="service-badge">🇮🇱 TA-125: Yahoo Finance</div>
+            <div class="service-badge">🇺🇸 S&P 500: Polygon.io</div>
+        </div>
     </div>
 
     <div class="cards">
         <div class="card">
             <h3><span class="card-icon">🇮🇱</span>TA-125 Data</h3>
             <p>Tel Aviv Stock Exchange TA-125 Index data with OHLCV information for the last 50 trading days.</p>
-            <p><strong>Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume</p>
-            <p><strong>Update:</strong> Daily at 2:00 AM UTC</p>
+            <div class="service-info">
+                <strong>🔧 Service:</strong> Yahoo Finance<br>
+                <strong>📊 Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume<br>
+                <strong>🔄 Update:</strong> Daily at 2:00 AM UTC<br>
+                <strong>⚡ Rate Limit:</strong> 15 req/min with 25-30s delays
+            </div>
             <a href="data/Shazam-Stock-Info-TA125.csv" class="download-btn" download>
                 📥 Download TA-125 CSV
             </a>
@@ -139,8 +181,12 @@
         <div class="card">
             <h3><span class="card-icon">🇺🇸</span>S&P 500 Data</h3>
             <p>S&P 500 Index stocks data with OHLCV information for the last 50 trading days.</p>
-            <p><strong>Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume</p>
-            <p><strong>Update:</strong> Daily at 2:00 AM UTC</p>
+            <div class="service-info">
+                <strong>🔧 Service:</strong> Polygon.io API<br>
+                <strong>📊 Format:</strong> CSV with Symbol, Date, Open, High, Low, Close, Volume<br>
+                <strong>🔄 Update:</strong> Daily at 2:00 AM UTC<br>
+                <strong>⚡ Rate Limit:</strong> 5 req/min with 12s delays (free tier)
+            </div>
             <a href="data/Shazam-Stock-Info-SP500.csv" class="download-btn" download>
                 📥 Download S&P 500 CSV
             </a>
@@ -148,10 +194,10 @@
     </div>
 
     <div class="status">
-        <h3>📈 Download Status</h3>
+        <h3>📈 Download Status & Service Health</h3>
         <div id="status-content">
             <div class="status-item">
-                <span>Status:</span>
+                <span>Overall Status:</span>
                 <span class="status-value" id="status">Loading...</span>
             </div>
             <div class="status-item">
@@ -171,54 +217,101 @@
                 <span class="status-value" id="duration">Loading...</span>
             </div>
         </div>
+        
+        <div class="service-status" id="service-status">
+            <div class="service-card">
+                <h4>🇮🇱 Yahoo Finance (TA-125)</h4>
+                <div id="yahoo-status">Loading...</div>
+            </div>
+            <div class="service-card">
+                <h4>🇺🇸 Polygon.io (S&P 500)</h4>
+                <div id="polygon-status">Loading...</div>
+            </div>
+        </div>
     </div>
 
     <div class="api-docs">
         <h3>🔗 API Access</h3>
-        <p>Access the CSV files programmatically:</p>
+        <p>Access the CSV files programmatically with our dual-service architecture:</p>
         
         <h4>Direct URLs:</h4>
         <div class="code-block">
-# TA-125 Data
+# TA-125 Data (Yahoo Finance)
 https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv
 
-# S&P 500 Data  
+# S&P 500 Data (Polygon.io)
 https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-SP500.csv
 
-# Status JSON
+# Status JSON (includes service health)
 https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/download_status.json
         </div>
 
         <h4>Python Example:</h4>
         <div class="code-block">
 import pandas as pd
+import requests
 
-# Load TA-125 data
+# Load TA-125 data (Yahoo Finance source)
 ta125_url = "https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv"
 ta125_df = pd.read_csv(ta125_url)
 
-# Load S&P 500 data
+# Load S&P 500 data (Polygon.io source)
 sp500_url = "https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-SP500.csv"  
 sp500_df = pd.read_csv(sp500_url)
 
-print(f"TA-125 records: {len(ta125_df)}")
-print(f"S&P 500 records: {len(sp500_df)}")
+# Check service status
+status_url = "https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/download_status.json"
+status = requests.get(status_url).json()
+
+print(f"TA-125 records: {len(ta125_df)} (via {status['services']['ta125_service']})")
+print(f"S&P 500 records: {len(sp500_df)} (via {status['services']['sp500_service']})")
+print(f"Polygon.io Health: {status['services']['polygon_health']['status']}")
+        </div>
+
+        <h4>Service Architecture:</h4>
+        <div class="code-block">
+📊 Multi-Service Design:
+   
+🇮🇱 TA-125 Stocks → Yahoo Finance API
+   • Better support for .TA symbols
+   • 15 requests/minute rate limit
+   • 25-30 second delays between requests
+   • Handles Israeli market trading days
+   
+🇺🇸 S&P 500 Stocks → Polygon.io API  
+   • Premium financial data quality
+   • 20 requests/minute rate limit
+   • 12 second delays between requests
+   • Professional-grade US market data
+   
+🔄 Automatic Failover:
+   • Each service optimized for its market
+   • Independent rate limiting per service
+   • Comprehensive health monitoring
         </div>
 
         <h4>JavaScript Example:</h4>
         <div class="code-block">
-// Fetch TA-125 data
-fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv')
-  .then(response => response.text())
-  .then(csvData => {
-    console.log('TA-125 CSV data:', csvData);
-    // Parse CSV data here
-  });
+// Fetch both datasets and service status
+Promise.all([
+  fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-TA125.csv'),
+  fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/Shazam-Stock-Info-SP500.csv'),
+  fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/main/data/download_status.json')
+]).then(async ([ta125Response, sp500Response, statusResponse]) => {
+  const ta125Data = await ta125Response.text();
+  const sp500Data = await sp500Response.text();
+  const status = await statusResponse.json();
+  
+  console.log('TA-125 CSV (Yahoo Finance):', ta125Data.split('\n').length - 1, 'records');
+  console.log('S&P 500 CSV (Polygon.io):', sp500Data.split('\n').length - 1, 'records');
+  console.log('Services:', status.services);
+});
         </div>
     </div>
 
     <div class="footer">
-        <p>🤖 Powered by GitHub Actions • 📊 Data from Yahoo Finance • ⚡ Updated automatically every day</p>
+        <p>🤖 Powered by GitHub Actions • 📊 Data from Polygon.io + Yahoo Finance • ⚡ Updated automatically every day</p>
+        <p><strong>Multi-Service Architecture:</strong> TA-125 via Yahoo Finance, S&P 500 via Polygon.io</p>
         <p><strong>Disclaimer:</strong> This data is for informational purposes only. Not investment advice.</p>
     </div>
 
@@ -227,6 +320,7 @@ fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/mai
         fetch('data/download_status.json')
             .then(response => response.json())
             .then(data => {
+                // Main status
                 document.getElementById('status').textContent = data.status === 'success' ? '✅ Success' : '❌ Failed';
                 document.getElementById('status').className = data.status === 'success' ? 'status-value success' : 'status-value';
                 
@@ -239,10 +333,32 @@ fetch('https://raw.githubusercontent.com/YOUR_USERNAME/stock-data-automation/mai
                 const minutes = Math.floor(duration / 60);
                 const seconds = duration % 60;
                 document.getElementById('duration').textContent = `${minutes}m ${seconds}s`;
+                
+                // Service status
+                if (data.services) {
+                    // Yahoo Finance status
+                    const yahooStatus = data.services.yahoo_health || { status: 'Available' };
+                    document.getElementById('yahoo-status').innerHTML = `
+                        <div><strong>Status:</strong> ${yahooStatus.status}</div>
+                        <div><strong>Service:</strong> ${data.services.ta125_service || 'Yahoo Finance'}</div>
+                    `;
+                    
+                    // Polygon.io status
+                    const polygonStatus = data.services.polygon_health || {};
+                    const healthIcon = polygonStatus.isHealthy ? '✅' : '❌';
+                    document.getElementById('polygon-status').innerHTML = `
+                        <div><strong>Status:</strong> ${healthIcon} ${polygonStatus.status || 'Unknown'}</div>
+                        <div><strong>Service:</strong> ${data.services.sp500_service || 'Polygon.io'}</div>
+                        ${polygonStatus.responseTime ? `<div><strong>Response:</strong> ${Math.round(polygonStatus.responseTime)}ms</div>` : ''}
+                        ${polygonStatus.apiLimitRemaining ? `<div><strong>API Limit:</strong> ${polygonStatus.apiLimitRemaining} remaining</div>` : ''}
+                    `;
+                }
             })
             .catch(error => {
                 console.error('Error loading status:', error);
                 document.getElementById('status').textContent = '❓ Unknown';
+                document.getElementById('yahoo-status').textContent = 'Status unavailable';
+                document.getElementById('polygon-status').textContent = 'Status unavailable';
             });
     </script>
 </body>
