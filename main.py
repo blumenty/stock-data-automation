@@ -107,14 +107,14 @@ class StockDataAutomation:
             all_symbols = get_all_symbols()
             
             # Download TA125 data using Yahoo Finance (TA symbols work better with Yahoo)
-#            log.info('🇮🇱 Starting TA-125 download with Yahoo Finance...')
-#            ta125_data = self.download_market_data(
-#                all_symbols['TA125'], 
-#                'TA-125', 
-#                service_type='yahoo'
-#            )
-#            if ta125_data:
-#                self.save_to_csv(ta125_data, 'Shazam-Stock-Info-TA125.csv', 'TA-125')
+            log.info('🇮🇱 Starting TA-125 download with Yahoo Finance...')
+            ta125_data = self.download_market_data(
+                all_symbols['TA125'], 
+                'TA-125', 
+                service_type='yahoo'
+            )
+            if ta125_data:
+                self.save_to_csv(ta125_data, 'Shazam-Stock-Info-TA125.csv', 'TA-125')
             
             # Download SP500 data using Polygon.io (better for US stocks)
             log.info('🇺🇸 Starting S&P 500 download with Polygon.io...')
@@ -185,4 +185,5 @@ def main():
     automation.run_daily_download()
 
 if __name__ == '__main__':
+
     main()
