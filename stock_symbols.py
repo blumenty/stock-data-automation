@@ -6,7 +6,8 @@ Stock Symbols - Exact same stocks as your Dart implementation
 # TA-125 Stocks (exact same as your Dart code)
 TA125_STOCKS = [
     # Banks & Financial Services
-    'DSCT.TA', 'POLI.TA', 'LUMI.TA', 'MZTF.TA', 'FIBI.TA', 'IBI.TA',
+    'DSCT.TA',
+"""    'POLI.TA', 'LUMI.TA', 'MZTF.TA', 'FIBI.TA', 'IBI.TA',
     'AMOT.TA', 'EQTL.TA', 'MTAV.TA', 'ISRS.TA', 'MNIF.TA', 'TASE.TA',
     'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA', 'ISCD.TA',
     
@@ -42,7 +43,7 @@ TA125_STOCKS = [
     'ELRN.TA', 'GILT.TA', 'MRHL.TA', 'DNMR.TA', 'RLCO.TA', 'PLSN.TA',
     'SODA.TA', 'VTLS.TA', 'BONS.TA', 'MZTF.TA', 'INRM.TA', 'ELCO.TA',
     'DELT.TA', 'HRON.TA', 'AVGL.TA', 'NECL.TA', 'LPSN.TA', 'RDGS.TA',
-    'ORMP.TA', 'KAMN.TA',
+    'ORMP.TA', 'KAMN.TA', """
 ]
 
 # S&P 500 Stocks (exact same as your Dart code) 
@@ -99,3 +100,4 @@ def get_all_symbols():
         'SP500': SP500_STOCKS
 
     }
+
