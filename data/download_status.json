@@ -1,17 +1,17 @@
 {
-  "last_update": "2025-08-26T05:51:52.884460",
-  "start_time": "2025-08-26T03:35:55.901602",
-  "duration_seconds": 8156.982858,
-  "ta125_symbols": 0,
-  "sp500_symbols": 428,
-  "total_symbols": 428,
+  "last_update": "2025-08-27T05:40:07.141568",
+  "start_time": "2025-08-27T03:29:03.944162",
+  "duration_seconds": 7863.197406,
+  "ta125_symbols": 1,
+  "sp500_symbols": 383,
+  "total_symbols": 384,
   "status": "success",
   "services": {
     "ta125_service": "Yahoo Finance",
     "sp500_service": "Polygon.io",
     "polygon_health": {
       "isHealthy": true,
-      "responseTime": 152.15,
+      "responseTime": 335.486,
       "status": "Connected",
       "apiLimitRemaining": null,
       "testSymbol": "AAPL"
