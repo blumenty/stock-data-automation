@@ -1,7 +1,7 @@
 {
-  "last_update": "2025-09-10T06:41:15.586451",
-  "start_time": "2025-09-10T04:25:13.007508",
-  "duration_seconds": 8162.578943,
+  "last_update": "2025-09-11T06:42:04.716615",
+  "start_time": "2025-09-11T04:26:07.094367",
+  "duration_seconds": 8157.622248,
   "ta125_symbols": 0,
   "sp500_symbols": 501,
   "total_symbols": 501,
@@ -11,7 +11,7 @@
     "sp500_service": "Polygon.io",
     "polygon_health": {
       "isHealthy": true,
-      "responseTime": 266.961,
+      "responseTime": 343.518,
       "status": "Connected",
       "apiLimitRemaining": null,
       "testSymbol": "AAPL"
