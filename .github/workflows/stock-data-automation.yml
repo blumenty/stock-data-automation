@@ -3,7 +3,7 @@ name: Stock Data Automation
 on:
   schedule:
     # Run at 4:00 AM UTC daily (Polygon.io + Yahoo Finance)
-    - cron: '0 4 * * *'
+    - cron: '0 4 * * 2-6'
   workflow_dispatch: # Allow manual trigger
   push:
     branches: [ main ]
@@ -69,6 +69,7 @@ jobs:
           data/download_status.json
 
         retention-days: 30
+
 
 
 
