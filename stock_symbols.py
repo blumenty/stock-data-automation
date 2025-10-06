@@ -98,7 +98,7 @@ SP500_STOCKS = [
   'VZ', 'VRTX', 'VTRS', 'VICI', 'V', 'VST', 'VMC', 'WRB', 'GWW', 'WAB',
   'WBA', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC', 'WELL', 'WST',
   'WDC', 'WY', 'WSM', 'WMB', 'WTW', 'WDAY', 'WYNN', 'XEL', 'XYL', 'YUM',
-  'ZBRA', 'ZBH', 'ZTS',
+  'ZBRA', 'ZBH', 'ZTS', 'ARM', 'ASML', 'AZN', 'DASH', 'DDOG', 'GFS', 'ILMN', 'MDB', 'MELI', 'MRVL', 'PDD', 'TEAM', 'TTD', 'ZS', 
 ];
 
 def get_all_symbols():
@@ -108,6 +108,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS
 
     }
+
 
 
 
