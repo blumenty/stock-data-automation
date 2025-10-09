@@ -46,6 +46,8 @@ jobs:
         wc -l data/Shazam-Stock-Info-TA125.csv || echo "TA125 file not found"
         echo "SP500 CSV rows:"
         wc -l data/Shazam-Stock-Info-SP500.csv || echo "SP500 file not found"
+        echo "ETFs CSV rows:"
+        wc -l data/Shazam-Stock-Info-ETFs.csv || echo "ETFs file not found"
         echo "Status file:"
         cat data/download_status.json || echo "Status file not found"
         
@@ -54,7 +56,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add data/*.csv data/*.json
-        git diff --staged --quiet || git commit -m "Update stock data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+        git diff --staged --quiet || git commit -m "Update stock data (TA125, SP500, ETFs) - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,10 +68,6 @@ jobs:
         path: |
           data/Shazam-Stock-Info-TA125.csv
           data/Shazam-Stock-Info-SP500.csv
+          data/Shazam-Stock-Info-ETFs.csv
           data/download_status.json
-
         retention-days: 30
-
-
-
-

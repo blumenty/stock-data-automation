@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Stock Data Automation - Main Script
-Downloads TA125 and SP500 data at 2 AM daily and saves to public CSV files
-NOW USING POLYGON.IO for S&P 500 and Yahoo Finance for TA125
+Downloads TA125, SP500, and ETF data at 2 AM daily and saves to public CSV files
+NOW USING POLYGON.IO for S&P 500 and ETFs, Yahoo Finance for TA125
 """
 
 import os
@@ -10,8 +10,8 @@ import csv
 import logging
 from datetime import datetime
 from typing import Dict, List
-from polygon_io_service import PolygonIOService, StockData  # Updated import
-from yahoo_finance_service import YahooFinanceService  # Keep for TA125
+from polygon_io_service import PolygonIOService, StockData
+from yahoo_finance_service import YahooFinanceService
 from stock_symbols import get_all_symbols
 
 # Configure logging
@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 class StockDataAutomation:
     def __init__(self):
-        self.polygon_service = PolygonIOService()  # For S&P 500
+        self.polygon_service = PolygonIOService()  # For S&P 500 and ETFs
         self.yahoo_service = YahooFinanceService()  # For TA125
         self.output_dir = os.environ.get('OUTPUT_DIR', 'data')
         
@@ -39,7 +39,7 @@ class StockDataAutomation:
             with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
                 
-                # Write header (same as before)
+                # Write header
                 writer.writerow(['Symbol', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
                 
                 # Write all stock data for this market
@@ -67,7 +67,7 @@ class StockDataAutomation:
         
         # Choose the appropriate service based on market
         if service_type == 'polygon':
-            log.info(f'🇺🇸 Using Polygon.io for {market_name} (S&P 500)')
+            log.info(f'🇺🇸 Using Polygon.io for {market_name}')
             market_data = self.polygon_service.fetch_multiple_stocks_with_breaks(symbols, days=50)
         else:
             log.info(f'🇮🇱 Using Yahoo Finance for {market_name} (TA-125)')
@@ -103,10 +103,10 @@ class StockDataAutomation:
             # Check service health first
             health_status = self.check_services_health()
             
-            # Get all symbols (same as before)
+            # Get all symbols
             all_symbols = get_all_symbols()
             
-            # Download TA125 data using Yahoo Finance (TA symbols work better with Yahoo)
+            # Download TA125 data using Yahoo Finance
             log.info('🇮🇱 Starting TA-125 download with Yahoo Finance...')
             ta125_data = self.download_market_data(
                 all_symbols['TA125'], 
@@ -116,7 +116,7 @@ class StockDataAutomation:
             if ta125_data:
                 self.save_to_csv(ta125_data, 'Shazam-Stock-Info-TA125.csv', 'TA-125')
             
-            # Download SP500 data using Polygon.io (better for US stocks)
+            # Download SP500 data using Polygon.io
             log.info('🇺🇸 Starting S&P 500 download with Polygon.io...')
             sp500_data = self.download_market_data(
                 all_symbols['SP500'], 
@@ -126,6 +126,16 @@ class StockDataAutomation:
             if sp500_data:
                 self.save_to_csv(sp500_data, 'Shazam-Stock-Info-SP500.csv', 'S&P 500')
             
+            # Download ETF data using Polygon.io
+            log.info('📊 Starting Top ETFs download with Polygon.io...')
+            etf_data = self.download_market_data(
+                all_symbols['ETFs'], 
+                'Top ETFs', 
+                service_type='polygon'
+            )
+            if etf_data:
+                self.save_to_csv(etf_data, 'Shazam-Stock-Info-ETFs.csv', 'Top ETFs')
+            
             # Summary
             end_time = datetime.now()
             duration = end_time - start_time
@@ -133,16 +143,17 @@ class StockDataAutomation:
             log.info(f'🎉 Daily download completed successfully!')
             log.info(f'📊 TA-125 (Yahoo Finance): {len(ta125_data)} symbols')
             log.info(f'📊 S&P 500 (Polygon.io): {len(sp500_data)} symbols')
+            log.info(f'📊 Top ETFs (Polygon.io): {len(etf_data)} symbols')
             log.info(f'⏱️ Total duration: {duration}')
             
             # Create status file for monitoring
-            self.create_status_file(ta125_data, sp500_data, start_time, end_time, health_status)
+            self.create_status_file(ta125_data, sp500_data, etf_data, start_time, end_time, health_status)
             
         except Exception as e:
             log.error(f'❌ Daily download failed: {e}')
             raise
     
-    def create_status_file(self, ta125_data: Dict, sp500_data: Dict, start_time: datetime, end_time: datetime, health_status: Dict):
+    def create_status_file(self, ta125_data: Dict, sp500_data: Dict, etf_data: Dict, start_time: datetime, end_time: datetime, health_status: Dict):
         """Create a status file for monitoring with service information"""
         status_file = os.path.join(self.output_dir, 'download_status.json')
         
@@ -153,11 +164,13 @@ class StockDataAutomation:
             'duration_seconds': (end_time - start_time).total_seconds(),
             'ta125_symbols': len(ta125_data),
             'sp500_symbols': len(sp500_data),
-            'total_symbols': len(ta125_data) + len(sp500_data),
+            'etf_symbols': len(etf_data),
+            'total_symbols': len(ta125_data) + len(sp500_data) + len(etf_data),
             'status': 'success',
             'services': {
                 'ta125_service': 'Yahoo Finance',
                 'sp500_service': 'Polygon.io',
+                'etf_service': 'Polygon.io',
                 'polygon_health': health_status.get('polygon', {}),
                 'yahoo_health': health_status.get('yahoo', {})
             },
@@ -180,10 +193,10 @@ def main():
     log.info('🚀 Stock Data Automation Starting...')
     log.info('📊 TA-125: Yahoo Finance Service')
     log.info('📊 S&P 500: Polygon.io Service')
+    log.info('📊 Top ETFs: Polygon.io Service')
     
     automation = StockDataAutomation()
     automation.run_daily_download()
 
 if __name__ == '__main__':
-
     main()
