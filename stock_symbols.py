@@ -99,17 +99,20 @@ SP500_STOCKS = [
   'WBA', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC', 'WELL', 'WST',
   'WDC', 'WY', 'WSM', 'WMB', 'WTW', 'WDAY', 'WYNN', 'XEL', 'XYL', 'YUM', 'PSKY',
   'ZBRA', 'ZBH', 'ZTS', 'ARM', 'ASML', 'AZN', 'DASH', 'DDOG', 'GFS', 'ILMN', 'MDB', 'MELI', 'MRVL', 'PDD', 'TEAM', 'TTD', 'ZS', 
-];
+]
+
+# Top ETFs (exact same as your Dart code - 37 ETFs)
+TOP_ETFS = [
+    'WGMI', 'EUAD', 'SHLD', 'STCE', 'PSIL', 'BKCH', 'GREK', 'ARKW', 'EWY', 'KEMQ',
+    'HYDR', 'UFO', 'CNXT','DAPP', 'BLOK', 'EWP', 'EPOL', 'CTEC', 'FGM', 'AFK', 'DECO',
+    'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLVP', 'RING', 'GDX', 'SIL', 'URA', 'DMAT', 'COPJ',
+    'NLR', 'BTGD', 'PPLT', 'IBLC', 'XME',
+]
 
 def get_all_symbols():
     """Get all symbols for download"""
     return {
         'TA125': TA125_STOCKS,
-        'SP500': SP500_STOCKS
-
+        'SP500': SP500_STOCKS,
+        'ETFs': TOP_ETFS,
     }
-
-
-
-
-
