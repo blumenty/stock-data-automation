@@ -99,14 +99,25 @@ SP500_STOCKS = [
   'WBA', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC', 'WELL', 'WST',
   'WDC', 'WY', 'WSM', 'WMB', 'WTW', 'WDAY', 'WYNN', 'XEL', 'XYL', 'YUM', 'PSKY',
   'ZBRA', 'ZBH', 'ZTS', 'ARM', 'ASML', 'AZN', 'DASH', 'DDOG', 'GFS', 'ILMN', 'MDB', 'MELI', 'MRVL', 'PDD', 'TEAM', 'TTD', 'ZS', 
+  'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO', 'IONQ', 'NXE', 'CLS',    
 ]
 
 # Top ETFs (exact same as your Dart code - 37 ETFs)
 TOP_ETFS = [
+    # Original Top Performing ETFs (37)
     'WGMI', 'EUAD', 'SHLD', 'STCE', 'PSIL', 'BKCH', 'GREK', 'ARKW', 'EWY', 'KEMQ',
-    'HYDR', 'UFO', 'CNXT','DAPP', 'BLOK', 'EWP', 'EPOL', 'CTEC', 'FGM', 'AFK', 'DECO',
+    'HYDR', 'UFO', 'CNXT', 'DAPP', 'BLOK', 'EWP', 'EPOL', 'CTEC', 'FGM', 'AFK', 'DECO',
     'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLVP', 'RING', 'GDX', 'SIL', 'URA', 'DMAT', 'COPJ',
     'NLR', 'BTGD', 'PPLT', 'IBLC', 'XME',
+    
+    # Additional ETFs from PDF (67)
+    'AIA', 'ARKF', 'ARKO', 'BKF', 'BOTZ', 'CANE', 'CGW', 'CLNE', 'COPX', 'CORN',
+    'CRBN', 'DBA', 'DBB', 'DBC', 'DIA', 'EEM', 'EFA', 'FLR', 'FXI', 'GLD',
+    'GRNY', 'IBB', 'IBIT', 'ILF', 'INDA', 'ITB', 'IWD', 'IWM', 'IYR', 'IYT',
+    'IZRL', 'MAGS', 'MJ', 'MOO', 'MTUM', 'OEF', 'OIH', 'PBW', 'PHO', 'PPA',
+    'QQQ', 'ROBT', 'RSP', 'SMH', 'SOYB', 'SPY', 'TAN', 'UNG', 'VGK', 'VGT',
+    'VT', 'VTI', 'VUG', 'VWO', 'WEAT', 'WOOD', 'XLB', 'XLC', 'XLE', 'XLF',
+    'XLG', 'XLI', 'XLK', 'XLV', 'XLY', 'XOP', 'XRT',
 ]
 
 def get_all_symbols():
@@ -116,4 +127,3 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
-
