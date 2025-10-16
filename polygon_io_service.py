@@ -37,8 +37,8 @@ class PolygonIOService:
     
     # Anti-detection measures (STRICT - exact same as Dart)
     MIN_REQUEST_DELAY = 12.0   # 12 seconds minimum = 5 requests per minute MAX
-    RETRY_BACKOFF_BASE = 5     # 5 seconds base
-    MAX_RETRIES = 3
+    RETRY_BACKOFF_BASE = 6     # 5 seconds base
+    MAX_RETRIES = 4
     
     # Rate limiting (5 REQUESTS PER MINUTE MAX - Polygon.io free tier)
     MAX_REQUESTS_PER_MINUTE = 5  # Free tier limit
@@ -365,3 +365,4 @@ class PolygonIOService:
                 'status': 'Disconnected',
 
             }
+
