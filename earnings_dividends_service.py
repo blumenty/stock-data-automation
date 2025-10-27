@@ -91,8 +91,7 @@ class EarningsDividendsService:
     def fetch_dividend_earnings_data(self, symbols: list) -> Dict[str, DividendEarningsData]:
         """Fetch dividend and earnings data for all symbols"""
         results = {}
-        saturday = self._get_next_saturday()
-        from_date = saturday.strftime('%Y-%m-%d')
+        from_date = datetime.now().strftime('%Y-%m-%d')
         
         log.info(f'📊 Fetching dividend data for {len(symbols)} symbols from {from_date}')
         
