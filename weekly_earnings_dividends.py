@@ -29,18 +29,6 @@ class WeeklyEarningsDividends:
         filepath = os.path.join(self.output_dir, filename)
         
         try:
-#            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-#                writer = csv.writer(csvfile, delimiter=';')
- #               writer.writerow(['Symbol', 'Date', 'Next_Div_Date', 'Next_Earn_Date'])
-#                
-#                for symbol, item in data.items():
-#                    writer.writerow([
-#                        item.symbol,
-#                        item.date.strftime('%Y-%m-%d'),
-#                        item.next_div_date or '',
-#                        item.next_earn_date or ''
-#                    ])
-
             with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
                 
@@ -69,11 +57,13 @@ class WeeklyEarningsDividends:
         
         try:
             all_symbols = get_all_symbols()
-            all_stock_symbols = all_symbols['ETFs']
+            # Combine all symbol lists
+            all_stock_symbols = (
+                all_symbols['SP500'] + 
+                all_symbols['ETFs']
+            )
             
             log.info(f'📊 Processing {len(all_stock_symbols)} symbols')
-            log.info(f'📋 First 10 symbols: {all_stock_symbols[:10]}')
-            log.info(f'📋 Last 10 symbols: {all_stock_symbols[-10:]}')
             
             data = self.service.fetch_dividend_earnings_data(all_stock_symbols)
             
