@@ -1,0 +1,58 @@
+name: Weekly Earnings & Dividends
+
+on:
+  schedule:
+    # Run every Sunday at 12:00 PM UTC
+    - cron: '0 12 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  earnings-dividends:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Create data directory
+      run: mkdir -p data
+      
+    - name: Run weekly earnings/dividends update
+      run: python weekly_earnings_dividends.py
+      env:
+        OUTPUT_DIR: data
+        
+    - name: Check generated file
+      run: |
+        echo "Generated file:"
+        ls -la data/Shazam-Stock-Earn-Div.csv || echo "File not found"
+        echo "CSV rows:"
+        wc -l data/Shazam-Stock-Earn-Div.csv || echo "File not found"
+        head -n 20 data/Shazam-Stock-Earn-Div.csv || echo "Cannot display contents"
+        
+    - name: Commit and push CSV file
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/Shazam-Stock-Earn-Div.csv
+        git diff --staged --quiet || git commit -m "Update earnings/dividends data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload CSV as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: earnings-dividends-csv
+        path: data/Shazam-Stock-Earn-Div.csv
+        retention-days: 30
