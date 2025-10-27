@@ -8,7 +8,7 @@ import os
 import csv
 import logging
 from datetime import datetime
-from yfinance.usr.bin.env.earnings_dividends_service import EarningsDividendsService
+from earnings_dividends_service import EarningsDividendsService
 from stock_symbols import get_all_symbols
 
 logging.basicConfig(
@@ -82,3 +82,4 @@ def main():
 if __name__ == '__main__':
 
     main()
+
