@@ -53,10 +53,12 @@ class WeeklyEarningsDividends:
         log.info(f'🚀 Starting weekly earnings/dividends update at {start_time.strftime("%Y-%m-%d %H:%M:%S")}')
         
         try:
-#            all_symbols = get_all_symbols()
+            all_symbols = get_all_symbols()
             all_stock_symbols = all_symbols['ETFs']
             
             log.info(f'📊 Processing {len(all_stock_symbols)} symbols')
+            log.info(f'📋 First 10 symbols: {all_stock_symbols[:10]}')
+            log.info(f'📋 Last 10 symbols: {all_stock_symbols[-10:]}')
             
             data = self.service.fetch_dividend_earnings_data(all_stock_symbols)
             
@@ -82,6 +84,7 @@ def main():
 if __name__ == '__main__':
 
     main()
+
 
 
 
