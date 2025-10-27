@@ -1,4 +1,4 @@
-Symbol;Date;Next_Div_Date;Next_Earn_Date
-WGMI;2025-10-27;;
-EUAD;2025-10-27;;
-AMAT;2025-10-27;2025-11-20;
+Symbol,Date,Next_Div_Date,Next_Earn_Date
+WGMI,2025-10-27,,
+EUAD,2025-10-27,,
+AMAT,2025-10-27,2025-11-20,
