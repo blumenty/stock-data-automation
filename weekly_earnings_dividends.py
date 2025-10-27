@@ -54,7 +54,7 @@ class WeeklyEarningsDividends:
         
         try:
             all_symbols = get_all_symbols()
-            all_stock_symbols = all_symbols['SP500']  # Start with S&P 500 only
+            all_stock_symbols = all_symbols['ETFs']  # Start with S&P 500 only
             
             log.info(f'📊 Processing {len(all_stock_symbols)} symbols')
             
@@ -80,4 +80,5 @@ def main():
     automation.run_weekly_update()
 
 if __name__ == '__main__':
+
     main()
