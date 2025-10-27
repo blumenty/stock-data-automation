@@ -53,7 +53,7 @@ class WeeklyEarningsDividends:
                             item.symbol,
                             item.date.strftime('%Y-%m-%d'),
                             item.next_div_date or '',
-                            item.next_earn_date or ',
+                            item.next_earn_date or '',
                         ])
       
             log.info(f'💾 Saved earnings/dividends data to: {filepath}')
@@ -99,6 +99,7 @@ def main():
 if __name__ == '__main__':
 
     main()
+
 
 
 
