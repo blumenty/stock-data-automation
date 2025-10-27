@@ -103,9 +103,10 @@ class EarningsDividendsService:
             
             results[symbol] = DividendEarningsData(
                 symbol=symbol,
-                date=saturday,
+                date=datetime.now(),
                 next_div_date=next_div,
                 next_earn_date=None  # Earnings will be added later
+            )
             )
             
             # Break every 5 requests (free tier limit)
@@ -114,4 +115,5 @@ class EarningsDividendsService:
                 time.sleep(120)
         
         log.info(f'✅ Completed dividend data fetch for {len(results)} symbols')
+
         return results
