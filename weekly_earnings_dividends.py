@@ -29,18 +29,33 @@ class WeeklyEarningsDividends:
         filepath = os.path.join(self.output_dir, filename)
         
         try:
+#            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+#                writer = csv.writer(csvfile, delimiter=';')
+ #               writer.writerow(['Symbol', 'Date', 'Next_Div_Date', 'Next_Earn_Date'])
+#                
+#                for symbol, item in data.items():
+#                    writer.writerow([
+#                        item.symbol,
+#                        item.date.strftime('%Y-%m-%d'),
+#                        item.next_div_date or '',
+#                        item.next_earn_date or ''
+#                    ])
+
             with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-                writer = csv.writer(csvfile, delimiter=';')
+                writer = csv.writer(csvfile)
+                
+                # Write header
                 writer.writerow(['Symbol', 'Date', 'Next_Div_Date', 'Next_Earn_Date'])
                 
+                # Write all stock data for this market
                 for symbol, item in data.items():
-                    writer.writerow([
-                        item.symbol,
-                        item.date.strftime('%Y-%m-%d'),
-                        item.next_div_date or '',
-                        item.next_earn_date or ''
-                    ])
-            
+                        writer.writerow([
+                            item.symbol,
+                            item.date.strftime('%Y-%m-%d'),
+                            item.next_div_date or '',
+                            item.next_earn_date or ',
+                        ])
+      
             log.info(f'💾 Saved earnings/dividends data to: {filepath}')
             
         except Exception as e:
@@ -84,6 +99,7 @@ def main():
 if __name__ == '__main__':
 
     main()
+
 
 
 
