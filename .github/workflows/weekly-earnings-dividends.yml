@@ -42,11 +42,12 @@ jobs:
         
     - name: Commit and push CSV file
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add data/Shazam-Stock-Earn-Div.csv
-        git diff --staged --quiet || git commit -m "Update earnings/dividends data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-        git push
+       git config --local user.email "action@github.com"
+       git config --local user.name "GitHub Action"
+       git pull --rebase
+       git add data/Shazam-Stock-Earn-Div.csv
+       git diff --staged --quiet || git commit -m "Update earnings/dividends data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+       git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
@@ -55,4 +56,5 @@ jobs:
       with:
         name: earnings-dividends-csv
         path: data/Shazam-Stock-Earn-Div.csv
+
         retention-days: 30
