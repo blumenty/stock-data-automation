@@ -3,7 +3,7 @@ name: Stock Data Automation
 on:
   schedule:
     # Run at 4:00 AM UTC daily (Polygon.io + Yahoo Finance)
-    - cron: '0 4 * * 2-6'
+    - cron: '0 5 * * 2-6'
   workflow_dispatch: # Allow manual trigger
   push:
     branches: [ main ]
@@ -70,4 +70,5 @@ jobs:
           data/Shazam-Stock-Info-SP500.csv
           data/Shazam-Stock-Info-ETFs.csv
           data/download_status.json
+
         retention-days: 30
