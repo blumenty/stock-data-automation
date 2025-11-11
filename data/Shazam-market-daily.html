@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Analysis Report - 2025-11-11</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header .date {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .data-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .positive {
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        
+        .neutral {
+            color: #6b7280;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-bull {
+            background: #10b981;
+            color: white;
+        }
+        
+        .badge-bear {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .badge-warn {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .badge-dist {
+            background: #8b5cf6;
+            color: white;
+        }
+        
+        .analysis-box {
+            background: #f8f9fa;
+            border-right: 4px solid #667eea;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        
+        .symbol-highlight {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .data-table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Market Analysis Report</h1>
+            <div class="date">2025-11-11 • 13:35:28 UTC</div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📈 Market Data Overview</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Description</th>
+                            <th>Last</th>
+                            <th>Change</th>
+                            <th>5-Day</th>
+                            <th>3-Month</th>
+                            <th>6-Month</th>
+                            <th>TSI</th>
+                            <th>Phase</th>
+                            <th>RM50</th>
+                            <th>RM10</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        <tr>
+                            <td class="symbol-highlight">SPY</td>
+                            <td>S&P 500</td>
+                            <td>681.65</td>
+                            <td>1.59</td>
+                            <td class="neutral">BULL!%</td>
+                            <td class="neutral">BEAR!%</td>
+                            <td class="neutral">n.a.%</td>
+                            <td></td>
+                            <td>7.13</td>
+                            <td><span class="badge badge-warn"></span></td>
+                            <td><span class="badge badge-warn"></span></td>
+                        </tr>
+
+                        <tr>
+                            <td class="symbol-highlight">QQQ</td>
+                            <td>Nasdaq</td>
+                            <td>623.23</td>
+                            <td>2.29</td>
+                            <td class="neutral">BULL!%</td>
+                            <td class="neutral">DIST%</td>
+                            <td class="neutral">BULL!%</td>
+                            <td></td>
+                            <td>9.55</td>
+                            <td><span class="badge badge-warn"></span></td>
+                            <td><span class="badge badge-warn"></span></td>
+                        </tr>
+
+                        <tr>
+                            <td class="symbol-highlight">IWM</td>
+                            <td>Russell</td>
+                            <td>244.55</td>
+                            <td>1.22</td>
+                            <td class="neutral">WARN%</td>
+                            <td class="neutral">BEAR%</td>
+                            <td class="neutral">WARN%</td>
+                            <td></td>
+                            <td>7.80</td>
+                            <td><span class="badge badge-warn"></span></td>
+                            <td><span class="badge badge-warn"></span></td>
+                        </tr>
+
+                        <tr>
+                            <td class="symbol-highlight">DIA</td>
+                            <td>Dow</td>
+                            <td>473.71</td>
+                            <td>0.82</td>
+                            <td class="neutral">BULL%</td>
+                            <td class="neutral">DIST%</td>
+                            <td class="neutral">BEAR!%</td>
+                            <td></td>
+                            <td>5.39</td>
+                            <td><span class="badge badge-warn"></span></td>
+                            <td><span class="badge badge-warn"></span></td>
+                        </tr>
+
+                        <tr>
+                            <td class="symbol-highlight">VTI</td>
+                            <td>Total Market Index</td>
+                            <td>335.20</td>
+                            <td>1.55</td>
+                            <td class="neutral">BULL!%</td>
+                            <td class="neutral">BEAR%</td>
+                            <td class="neutral">BEAR%</td>
+                            <td></td>
+                            <td>7.05</td>
+                            <td><span class="badge badge-warn"></span></td>
+                            <td><span class="badge badge-warn"></span></td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>🤖 AI Analysis by Claude</h2>
+                <div class="analysis-box">
+Analysis not available - Claude API call failed.
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Generated automatically by Shazam Market Analyzer</p>
+            <p>Data source: MarketGauge.com | AI Analysis: Claude by Anthropic</p>
+        </div>
+    </div>
+</body>
+</html>
