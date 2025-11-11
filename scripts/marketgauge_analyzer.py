@@ -21,7 +21,7 @@ except ImportError:
 
 # Claude API Configuration
 CLAUDE_API_URL = "https://api.anthropic.com/v1/complete"
-CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
+CLAUDE_MODEL = "claude-sonnet-4-5"
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
@@ -272,13 +272,13 @@ def call_claude_api(prompt, api_key):
     headers = {
         "Content-Type": "application/json",
         "x-api-key": api_key,
-        "anthropic-version": "2023-06-01"
+        "anthropic-version": "2023-10-01-preview"
     }
 
     payload = {
         "model": CLAUDE_MODEL,
         "input": prompt,
-        "max_tokens_to_sample": 4000
+        "max_tokens_to_sample": 3000
     }
 
     try:
