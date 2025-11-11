@@ -50,7 +50,7 @@ def fetch_marketgauge_data_selenium():
         print(f"⏳ Page loaded, waiting 15 seconds for JavaScript to execute...")
         
         # Wait 15 seconds for JavaScript to load data
-        time.sleep(15)
+        time.sleep(30)
         
         # Wait for table to be present
         try:
