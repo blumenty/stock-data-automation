@@ -20,7 +20,7 @@ except ImportError:
     print("⚠️  Selenium not available, will use requests with delay")
 
 # Claude API Configuration
-CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+CLAUDE_API_URL = "https://api.anthropic.com/v1/complete"
 CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 
 def fetch_marketgauge_data_selenium():
