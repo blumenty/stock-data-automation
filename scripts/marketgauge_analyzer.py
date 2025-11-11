@@ -276,14 +276,9 @@ def call_claude_api(prompt, api_key):
     }
 
     payload = {
-        "model": CLAUDE_MODEL,  # e.g., "claude-3-sonnet-20240229"
-        "max_tokens": 4000,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ]
+        "model": CLAUDE_MODEL,
+        "input": prompt,
+        "max_tokens_to_sample": 4000
     }
 
     try:
@@ -291,8 +286,9 @@ def call_claude_api(prompt, api_key):
         response.raise_for_status()
         result = response.json()
 
-        if "content" in result and len(result["content"]) > 0:
-            analysis = result["content"][0].get("text", "")
+        # Claude responses have a 'completion' field
+        analysis = result.get("completion", "")
+        if analysis:
             print("✅ Claude API analysis received")
             return analysis
         else:
@@ -304,6 +300,7 @@ def call_claude_api(prompt, api_key):
         import traceback
         traceback.print_exc()
         return None
+
 
 
 
