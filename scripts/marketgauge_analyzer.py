@@ -7,41 +7,128 @@ import os
 import sys
 import time
 
+# Try to import selenium, but provide fallback
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
+    print("⚠️  Selenium not available, will use requests with delay")
+
 # Claude API Configuration
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 
-def fetch_marketgauge_data():
-    """Fetch and parse MarketGauge Big View data"""
+def fetch_marketgauge_data_selenium():
+    """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
     url = "https://marketgauge.com/tools/big-view/?tab=1&chart=4"
     
     print(f"🔍 Fetching data from {url}")
+    print("🌐 Using Selenium to handle JavaScript content...")
+    
+    driver = None
+    try:
+        # Set up Chrome options for headless mode
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Initialize Chrome driver
+        print("🚀 Starting Chrome browser in headless mode...")
+        driver = webdriver.Chrome(options=chrome_options)
+        
+        # Load the page
+        driver.get(url)
+        print(f"⏳ Page loaded, waiting 15 seconds for JavaScript to execute...")
+        
+        # Wait 15 seconds for JavaScript to load data
+        time.sleep(15)
+        
+        # Wait for table to be present
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "table"))
+            )
+            print("✅ Table element detected")
+        except:
+            print("⚠️  Table wait timeout, proceeding anyway...")
+        
+        # Get page source after JavaScript execution
+        page_source = driver.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+        
+        return parse_marketgauge_table(soup)
+        
+    except Exception as e:
+        print(f"❌ Error with Selenium: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+    finally:
+        if driver:
+            driver.quit()
+            print("🔒 Browser closed")
+
+def fetch_marketgauge_data_requests():
+    """Fallback: Fetch MarketGauge data using requests with delay"""
+    url = "https://marketgauge.com/tools/big-view/?tab=1&chart=4"
+    
+    print(f"🔍 Fetching data from {url}")
+    print("⏳ Using requests with 15-second delay...")
     
     try:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
+        
+        # Make request
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         
+        print("✅ Page fetched, waiting 15 seconds...")
+        time.sleep(15)  # Wait for any delayed content
+        
         soup = BeautifulSoup(response.content, 'html.parser')
+        return parse_marketgauge_table(soup)
         
-        # Parse the table data
-        data = []
+    except Exception as e:
+        print(f"❌ Error fetching with requests: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def parse_marketgauge_table(soup):
+    """Parse the MarketGauge table from BeautifulSoup object"""
+    
+    data = []
+    
+    # Target indices we care about
+    target_symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'VTI']
+    
+    # Find all tables on the page
+    tables = soup.find_all('table')
+    print(f"📊 Found {len(tables)} table(s) on page")
+    
+    if not tables:
+        print("❌ Could not find any tables")
+        return None
+    
+    # Try each table to find the one with our data
+    for table_idx, table in enumerate(tables):
+        print(f"🔍 Examining table {table_idx + 1}...")
         
-        # Target indices we care about
-        target_symbols = ['SPY', 'QQQ', 'IWM', 'DIA', 'VTI']
-        
-        # Find the main data table
-        table = soup.find('table')
-        
-        if not table:
-            print("❌ Could not find data table")
-            return None
-            
         rows = table.find_all('tr')
+        print(f"   Found {len(rows)} rows")
         
-        for row in rows:
+        for row_idx, row in enumerate(rows):
             cols = row.find_all('td')
             if len(cols) > 0:
                 # Get symbol from first column
@@ -66,7 +153,30 @@ def fetch_marketgauge_data():
                         })
                         print(f"✅ Parsed data for {symbol_text}")
                     except Exception as e:
-                        print(f"⚠️ Error parsing {symbol_text}: {e}")
+                        print(f"⚠️  Error parsing {symbol_text}: {e}")
+    
+    if not data:
+        print("❌ No target symbols found in any table")
+        print("💡 Tip: The page might require JavaScript. Try running locally with Selenium installed.")
+        return None
+    
+    print(f"✅ Successfully extracted data for {len(data)} indices")
+    return data
+
+def fetch_marketgauge_data():
+    """Main fetch function - tries Selenium first, falls back to requests"""
+    
+    if SELENIUM_AVAILABLE:
+        print("✅ Selenium available - using browser automation")
+        data = fetch_marketgauge_data_selenium()
+        if data:
+            return data
+        print("⚠️  Selenium failed, trying requests fallback...")
+    
+    # Fallback to requests
+    print("📡 Using requests (may not work if page requires JavaScript)")
+    return fetch_marketgauge_data_requests()
+
                         
         if not data:
             print("❌ No data extracted")
