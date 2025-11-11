@@ -20,7 +20,7 @@ except ImportError:
     print("⚠️  Selenium not available, will use requests with delay")
 
 # Claude API Configuration
-CLAUDE_API_URL = "https://api.anthropic.com/v1/response"
+CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 CLAUDE_MODEL = "claude-sonnet-4-5"
 
 def fetch_marketgauge_data_selenium():
@@ -272,14 +272,18 @@ def call_claude_api(prompt, api_key):
     headers = {
         "Content-Type": "application/json",
         "x-api-key": api_key,
-        "anthropic-version": "2023-10-01-preview"
+        "anthropic-version": "2023-06-01"
     }
 
     payload = {
         "model": CLAUDE_MODEL,
-        "input": prompt,
-        "max_tokens_to_sample": 3000,
-        "stop_sequences": ["\n\nHuman:"]
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 3000
     }
 
     try:
@@ -287,14 +291,16 @@ def call_claude_api(prompt, api_key):
         response.raise_for_status()
         result = response.json()
 
-        # Claude responses have a 'completion' field
-        analysis = result.get("completion", "")
-        if analysis:
-            print("✅ Claude API analysis received")
-            return analysis
-        else:
-            print("❌ Unexpected API response format:", result)
-            return None
+        # Claude messages API responses have a 'content' array
+        content = result.get("content", [])
+        if content and len(content) > 0:
+            analysis = content[0].get("text", "")
+            if analysis:
+                print("✅ Claude API analysis received")
+                return analysis
+
+        print("❌ Unexpected API response format:", result)
+        return None
 
     except Exception as e:
         print(f"❌ Error calling Claude API: {e}")
