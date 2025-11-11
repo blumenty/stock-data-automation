@@ -2,7 +2,7 @@ name: Market Analyzer
 
 on:
   schedule:
-    # Run at 04:00 PM UTC daily (after US market close)
+    # Run at 04:00 AM UTC daily (after US market close)
     - cron: '0 4 * * *'
   workflow_dispatch:  # Allow manual trigger
 
