@@ -178,18 +178,18 @@ def fetch_marketgauge_data():
     return fetch_marketgauge_data_requests()
 
                         
-        if not data:
-            print("❌ No data extracted")
-            return None
-            
-        print(f"✅ Successfully extracted data for {len(data)} indices")
-        return data
-    
-    except Exception as e:
-        print(f"❌ Error fetching MarketGauge data: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+#        if not data:
+#            print("❌ No data extracted")
+#            return None
+#            
+#        print(f"✅ Successfully extracted data for {len(data)} indices")
+#        return data
+#    
+#    except Exception as e:
+#        print(f"❌ Error fetching MarketGauge data: {e}")
+#        import traceback
+#        traceback.print_exc()
+#        return None
 
 def generate_csv_report(data, output_dir='data'):
     """Generate CSV format report"""
