@@ -3,7 +3,7 @@ name: Market Analyzer
 on:
   schedule:
     # Run at 10:00 PM UTC daily (after US market close)
-    - cron: '0 4 * * *'
+    - cron: '0 22 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -12,12 +12,12 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Full history for TSI tracking
         
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         cache: 'pip'
@@ -52,7 +52,7 @@ jobs:
         
     - name: Upload artifacts (for debugging)
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: market-reports
         path: |
