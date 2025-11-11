@@ -267,45 +267,47 @@ def update_tsi_history(data, output_dir='data'):
 
 def call_claude_api(prompt, api_key):
     """Call Claude API to generate analysis"""
-    
+
     print("🤖 Calling Claude API for analysis...")
-    
+
     headers = {
         "Content-Type": "application/json",
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01"
     }
-    
+
     payload = {
         "model": CLAUDE_MODEL,
         "max_tokens": 4000,
         "messages": [
             {
                 "role": "user",
-                "content": prompt
+                "content": [
+                    {"type": "text", "text": prompt}
+                ]
             }
         ]
     }
-    
+
     try:
         response = requests.post(CLAUDE_API_URL, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
-        
         result = response.json()
-        
-        if 'content' in result and len(result['content']) > 0:
-            analysis = result['content'][0]['text']
+
+        if "content" in result and len(result["content"]) > 0:
+            analysis = result["content"][0].get("text", "")
             print("✅ Claude API analysis received")
             return analysis
         else:
-            print("❌ Unexpected API response format")
+            print("❌ Unexpected API response format:", result)
             return None
-            
+
     except Exception as e:
         print(f"❌ Error calling Claude API: {e}")
         import traceback
         traceback.print_exc()
         return None
+
 
 def generate_html_report(data, claude_analysis, output_dir='data'):
     """Generate HTML report with Claude analysis"""
