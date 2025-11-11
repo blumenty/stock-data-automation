@@ -21,7 +21,7 @@ except ImportError:
 
 # Claude API Configuration
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
@@ -267,7 +267,6 @@ def update_tsi_history(data, output_dir='data'):
 
 def call_claude_api(prompt, api_key):
     """Call Claude API to generate analysis"""
-
     print("🤖 Calling Claude API for analysis...")
 
     headers = {
@@ -277,14 +276,12 @@ def call_claude_api(prompt, api_key):
     }
 
     payload = {
-        "model": CLAUDE_MODEL,
+        "model": CLAUDE_MODEL,  # e.g., "claude-3-sonnet-20240229"
         "max_tokens": 4000,
         "messages": [
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt}
-                ]
+                "content": prompt
             }
         ]
     }
@@ -307,6 +304,7 @@ def call_claude_api(prompt, api_key):
         import traceback
         traceback.print_exc()
         return None
+
 
 
 def generate_html_report(data, claude_analysis, output_dir='data'):
