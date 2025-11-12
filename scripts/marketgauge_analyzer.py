@@ -20,7 +20,7 @@ except ImportError:
     print("⚠️  Selenium not available, will use requests with delay")
 
 # Google Gemini API Configuration
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={gemini_api_key}"
+# GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
 
 def fetch_marketgauge_data_selenium():
@@ -256,8 +256,8 @@ def call_gemini_api(prompt, api_key):
     
     print("🤖 Calling Google Gemini API for analysis...")
     
-    # Gemini API uses query parameter for API key
-    url = f"{GEMINI_API_URL}"
+    # Build URL dynamically — don't use literal placeholders
+    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     
     headers = {
         "Content-Type": "application/json"
@@ -267,9 +267,7 @@ def call_gemini_api(prompt, api_key):
         "contents": [
             {
                 "parts": [
-                    {
-                        "text": prompt
-                    }
+                    {"text": prompt}
                 ]
             }
         ],
@@ -277,23 +275,22 @@ def call_gemini_api(prompt, api_key):
             "temperature": 0.7,
             "topK": 40,
             "topP": 0.95,
-            "maxOutputTokens": 2048,
+            "maxOutputTokens": 2048
         }
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
         
         result = response.json()
         
-        # Gemini API response structure
-        if 'candidates' in result and len(result['candidates']) > 0:
-            candidate = result['candidates'][0]
-            if 'content' in candidate and 'parts' in candidate['content']:
-                parts = candidate['content']['parts']
-                if len(parts) > 0 and 'text' in parts[0]:
-                    analysis = parts[0]['text']
+        if "candidates" in result and len(result["candidates"]) > 0:
+            candidate = result["candidates"][0]
+            if "content" in candidate and "parts" in candidate["content"]:
+                parts = candidate["content"]["parts"]
+                if len(parts) > 0 and "text" in parts[0]:
+                    analysis = parts[0]["text"]
                     print("✅ Gemini API analysis received")
                     return analysis
         
@@ -701,6 +698,7 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
+
 
 
 
