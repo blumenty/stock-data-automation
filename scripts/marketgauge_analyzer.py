@@ -251,24 +251,26 @@ def update_tsi_history(data, output_dir='data'):
     
     return True
 
-def call_gemini_api(prompt, api_key):
+import time
+import json
+import requests
+
+GEMINI_MODEL = "gemini-2.5-flash"
+
+def call_gemini_api(prompt, api_key, retries=3):
     """Call Google Gemini API to generate analysis"""
-    
     print("🤖 Calling Google Gemini API for analysis...")
-    
-    # Build URL dynamically — don't use literal placeholders
+
     GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={api_key}"
-    
+
     headers = {
         "Content-Type": "application/json"
     }
-    
+
     payload = {
         "contents": [
             {
-                "parts": [
-                    {"text": prompt}
-                ]
+                "parts": [{"text": prompt}]
             }
         ],
         "generationConfig": {
@@ -278,35 +280,46 @@ def call_gemini_api(prompt, api_key):
             "maxOutputTokens": 2048
         }
     }
-    
-    try:
-        response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=60)
-        response.raise_for_status()
-        
-        result = response.json()
-        
-        if "candidates" in result and len(result["candidates"]) > 0:
-            candidate = result["candidates"][0]
-            if "content" in candidate and "parts" in candidate["content"]:
-                parts = candidate["content"]["parts"]
-                if len(parts) > 0 and "text" in parts[0]:
-                    analysis = parts[0]["text"]
+
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.post(GEMINI_API_URL, headers=headers, json=payload, timeout=60)
+
+            # Handle overload
+            if response.status_code == 503:
+                print(f"⚠️ Gemini overloaded (attempt {attempt}/{retries}). Retrying in {5 * attempt}s...")
+                time.sleep(5 * attempt)
+                continue
+
+            # Raise for other HTTP errors
+            response.raise_for_status()
+
+            # Parse and extract text
+            result = response.json()
+            if "candidates" in result and result["candidates"]:
+                parts = result["candidates"][0]["content"]["parts"]
+                if parts and "text" in parts[0]:
                     print("✅ Gemini API analysis received")
-                    return analysis
-        
-        print("❌ Unexpected API response format:")
-        print(json.dumps(result, indent=2))
-        return None
-            
-    except requests.exceptions.HTTPError as e:
-        print(f"❌ HTTP Error calling Gemini API: {e}")
-        print(f"Response: {e.response.text}")
-        return None
-    except Exception as e:
-        print(f"❌ Error calling Gemini API: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+                    return parts[0]["text"]
+
+            print("❌ Unexpected API response format:")
+            print(json.dumps(result, indent=2))
+            return None
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error on attempt {attempt}: {e}")
+            if attempt < retries:
+                wait_time = 5 * attempt
+                print(f"⏳ Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                print("🚨 All retry attempts failed.")
+                print(traceback.format_exc())
+                return None
+
+    print("❌ Failed to get response from Gemini API after retries.")
+    return None
+
 
 def generate_html_report(data, ai_analysis, output_dir='data'):
     """Generate HTML report with AI analysis"""
@@ -698,6 +711,7 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
+
 
 
 
