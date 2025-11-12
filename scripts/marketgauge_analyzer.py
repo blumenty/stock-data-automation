@@ -20,8 +20,8 @@ except ImportError:
     print("⚠️  Selenium not available, will use requests with delay")
 
 # Google Gemini API Configuration
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-GEMINI_MODEL = "gemini-1.5-flash"  # Free tier model
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+GEMINI_MODEL = "gemini-1.5-flash-latest"  # Free tier model
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
