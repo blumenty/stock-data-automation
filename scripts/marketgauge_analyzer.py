@@ -20,8 +20,8 @@ except ImportError:
     print("⚠️  Selenium not available, will use requests with delay")
 
 # Google Gemini API Configuration
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent"
-GEMINI_MODEL = "gemini-2.5-flash-latest"  # Free tier model
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={gemini_api_key}"
+GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
@@ -257,7 +257,7 @@ def call_gemini_api(prompt, api_key):
     print("🤖 Calling Google Gemini API for analysis...")
     
     # Gemini API uses query parameter for API key
-    url = f"{GEMINI_API_URL}?key={api_key}"
+    url = f"{GEMINI_API_URL}"
     
     headers = {
         "Content-Type": "application/json"
@@ -701,5 +701,6 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
+
 
 
