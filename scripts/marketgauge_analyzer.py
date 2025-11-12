@@ -21,7 +21,7 @@ except ImportError:
 
 # Google Gemini API Configuration
 # GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
+# GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
@@ -255,7 +255,7 @@ import time
 import json
 import requests
 
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 def call_gemini_api(prompt, api_key, retries=3):
     """Call Google Gemini API to generate analysis"""
@@ -711,6 +711,7 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
+
 
 
 
