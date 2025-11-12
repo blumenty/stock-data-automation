@@ -19,9 +19,9 @@ except ImportError:
     SELENIUM_AVAILABLE = False
     print("⚠️  Selenium not available, will use requests with delay")
 
-# Claude API Configuration
-CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
-CLAUDE_MODEL = "claude-sonnet-4-20250514"
+# Google Gemini API Configuration
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+GEMINI_MODEL = "gemini-1.5-flash"  # Free tier model
 
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
@@ -50,7 +50,7 @@ def fetch_marketgauge_data_selenium():
         print(f"⏳ Page loaded, waiting 15 seconds for JavaScript to execute...")
         
         # Wait 15 seconds for JavaScript to load data
-        time.sleep(30)
+        time.sleep(15)
         
         # Wait for table to be present
         try:
@@ -177,20 +177,6 @@ def fetch_marketgauge_data():
     print("📡 Using requests (may not work if page requires JavaScript)")
     return fetch_marketgauge_data_requests()
 
-                        
-#        if not data:
-#            print("❌ No data extracted")
-#            return None
-#            
-#        print(f"✅ Successfully extracted data for {len(data)} indices")
-#        return data
-#    
-#    except Exception as e:
-#        print(f"❌ Error fetching MarketGauge data: {e}")
-#        import traceback
-#        traceback.print_exc()
-#        return None
-
 def generate_csv_report(data, output_dir='data'):
     """Generate CSV format report"""
     if not data:
@@ -265,54 +251,68 @@ def update_tsi_history(data, output_dir='data'):
     
     return True
 
-def call_claude_api(prompt, api_key):
-    """Call Claude API to generate analysis"""
-    print("🤖 Calling Claude API for analysis...")
-
+def call_gemini_api(prompt, api_key):
+    """Call Google Gemini API to generate analysis"""
+    
+    print("🤖 Calling Google Gemini API for analysis...")
+    
+    # Gemini API uses query parameter for API key
+    url = f"{GEMINI_API_URL}?key={api_key}"
+    
     headers = {
-        "Content-Type": "application/json",
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01"
+        "Content-Type": "application/json"
     }
-
+    
     payload = {
-        "model": CLAUDE_MODEL,
-        "messages": [
+        "contents": [
             {
-                "role": "user",
-                "content": prompt
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
             }
         ],
-        "max_tokens": 3000
+        "generationConfig": {
+            "temperature": 0.7,
+            "topK": 40,
+            "topP": 0.95,
+            "maxOutputTokens": 2048,
+        }
     }
-
+    
     try:
-        response = requests.post(CLAUDE_API_URL, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
         response.raise_for_status()
+        
         result = response.json()
-
-        # Claude messages API responses have a 'content' array
-        content = result.get("content", [])
-        if content and len(content) > 0:
-            analysis = content[0].get("text", "")
-            if analysis:
-                print("✅ Claude API analysis received")
-                return analysis
-
-        print("❌ Unexpected API response format:", result)
+        
+        # Gemini API response structure
+        if 'candidates' in result and len(result['candidates']) > 0:
+            candidate = result['candidates'][0]
+            if 'content' in candidate and 'parts' in candidate['content']:
+                parts = candidate['content']['parts']
+                if len(parts) > 0 and 'text' in parts[0]:
+                    analysis = parts[0]['text']
+                    print("✅ Gemini API analysis received")
+                    return analysis
+        
+        print("❌ Unexpected API response format:")
+        print(json.dumps(result, indent=2))
         return None
-
+            
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ HTTP Error calling Gemini API: {e}")
+        print(f"Response: {e.response.text}")
+        return None
     except Exception as e:
-        print(f"❌ Error calling Claude API: {e}")
+        print(f"❌ Error calling Gemini API: {e}")
         import traceback
         traceback.print_exc()
         return None
 
-
-
-
-def generate_html_report(data, claude_analysis, output_dir='data'):
-    """Generate HTML report with Claude analysis"""
+def generate_html_report(data, ai_analysis, output_dir='data'):
+    """Generate HTML report with AI analysis"""
     
     if not data:
         print("❌ No data to generate HTML report")
@@ -577,14 +577,14 @@ def generate_html_report(data, claude_analysis, output_dir='data'):
             </div>
             
             <div class="section">
-                <h2>🤖 AI Analysis by Claude</h2>
+                <h2>🤖 AI Analysis by Google Gemini</h2>
                 <div class="analysis-box">
 """
     
-    if claude_analysis:
-        html_content += claude_analysis
+    if ai_analysis:
+        html_content += ai_analysis
     else:
-        html_content += "Analysis not available - Claude API call failed."
+        html_content += "Analysis not available - AI API call failed."
     
     html_content += """
                 </div>
@@ -593,7 +593,7 @@ def generate_html_report(data, claude_analysis, output_dir='data'):
         
         <div class="footer">
             <p>Generated automatically by Shazam Market Analyzer</p>
-            <p>Data source: MarketGauge.com | AI Analysis: Claude by Anthropic</p>
+            <p>Data source: MarketGauge.com | AI Analysis: Google Gemini</p>
         </div>
     </div>
 </body>
@@ -614,11 +614,11 @@ def main():
     print("🚀 Shazam Market Analyzer Starting...")
     print("=" * 60)
     
-    # Get Claude API key from environment
-    claude_api_key = os.environ.get('CLAUDE_API_KEY')
+    # Get Gemini API key from environment
+    gemini_api_key = os.environ.get('GEMINI_API_KEY')
     
-    if not claude_api_key:
-        print("⚠️ WARNING: CLAUDE_API_KEY not found in environment variables")
+    if not gemini_api_key:
+        print("⚠️ WARNING: GEMINI_API_KEY not found in environment variables")
         print("⚠️ Will generate report without AI analysis")
     
     # Step 1: Fetch MarketGauge data
@@ -641,18 +641,18 @@ def main():
     if not tsi_success:
         print("⚠️ Warning: Failed to update TSI history")
     
-    # Step 4: Generate Claude analysis
-    claude_analysis = None
+    # Step 4: Generate AI analysis
+    ai_analysis = None
     
-    if claude_api_key:
-        # Create prompt for Claude
+    if gemini_api_key:
+        # Create prompt for Gemini
         prompt = f"""You are analyzing market data from MarketGauge for {datetime.now().strftime('%Y-%m-%d')}.
 
 Here is the current market data:
 
 {df.to_string()}
 
-Please provide a comprehensive market analysis report following this structure (remember Market-report-1 format):
+Please provide a comprehensive market analysis report following this structure (Market-report-1 format):
 
 ## **Market Report - S&P 500 & Nasdaq 100**
 **Source: MarketGauge Big View | Date: {datetime.now().strftime('%Y-%m-%d')}**
@@ -680,10 +680,10 @@ Same structure as SPY
 
 Be direct and specific. Use the exact numbers from the data. Format for HTML display."""
 
-        claude_analysis = call_claude_api(prompt, claude_api_key)
+        ai_analysis = call_gemini_api(prompt, gemini_api_key)
     
     # Step 5: Generate HTML report
-    html_success = generate_html_report(data, claude_analysis)
+    html_success = generate_html_report(data, ai_analysis)
     
     if not html_success:
         print("❌ Failed to generate HTML report. Exiting.")
@@ -701,4 +701,3 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
-
