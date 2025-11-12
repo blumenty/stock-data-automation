@@ -2,8 +2,8 @@ name: Market Analyzer
 
 on:
   schedule:
-    # Run at 04:00 AM UTC daily (after US market close)
-    - cron: '0 4 * * *'
+    # Run at 04:00 PM UTC daily (after US market close)
+    - cron: '0 04 * * *'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
         
     - name: Run Market Analyzer
       env:
-        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: |
         python scripts/marketgauge_analyzer.py
         
