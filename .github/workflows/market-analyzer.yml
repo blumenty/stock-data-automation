@@ -2,8 +2,8 @@ name: Market Analyzer
 
 on:
   schedule:
-    # Run at 04:00 PM UTC daily (after US market close)
-    - cron: '0 04 * * *'
+    # Run at 04:00 AM UTC daily (after US market close)
+    - cron: '0 4 * * 2-6'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -72,3 +72,4 @@ jobs:
           data/Shazam-market-daily.html
           data/shazam-tsi-history.csv
         retention-days: 7
+
