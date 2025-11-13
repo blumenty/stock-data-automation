@@ -19,10 +19,6 @@ except ImportError:
     SELENIUM_AVAILABLE = False
     print("⚠️  Selenium not available, will use requests with delay")
 
-# Google Gemini API Configuration
-# GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
-# GEMINI_MODEL = "gemini-2.5-flash"  # Free tier model
-
 def fetch_marketgauge_data_selenium():
     """Fetch MarketGauge data using Selenium (for JavaScript-loaded content)"""
     url = "https://marketgauge.com/tools/big-view/?tab=1&chart=4"
@@ -136,24 +132,31 @@ def parse_marketgauge_table(soup):
                 
                 if symbol_text in target_symbols:
                     try:
+                        # Extract based on actual column positions from MarketGauge
+                        # Order: Sym(0) | Desc(1) | Last(2) | %Chg(3) | %Hi(4) | %Vol(5) | Phase(6) | 5Dy(7) | 3Mo(8) | 6Mo(9) | YTD(10) | TSI(11) | RM50(12) | RM10(13) | TP-P(14) | TP-V(15)
                         data.append({
-                            'Symbol': symbol_text,
+                            'Symbol': cols[0].text.strip(),
                             'Description': cols[1].text.strip() if len(cols) > 1 else '',
                             'Last': cols[2].text.strip() if len(cols) > 2 else '',
-                            'Change': cols[3].text.strip() if len(cols) > 3 else '',
-                            'Pct_Change': cols[4].text.strip() if len(cols) > 4 else '',
-                            'Phase': cols[11].text.strip() if len(cols) > 11 else '',
-                            '5Day': cols[12].text.strip() if len(cols) > 12 else '',
-                            '3Month': cols[13].text.strip() if len(cols) > 13 else '',
-                            '6Month': cols[14].text.strip() if len(cols) > 14 else '',
-                            'YTD': cols[15].text.strip() if len(cols) > 15 else '',
-                            'TSI': cols[16].text.strip() if len(cols) > 16 else '',
-                            'RM50': cols[17].text.strip() if len(cols) > 17 else '',
-                            'RM10': cols[18].text.strip() if len(cols) > 18 else '',
+                            'Pct_Change': cols[3].text.strip() if len(cols) > 3 else '',
+                            'Pct_Hi': cols[4].text.strip() if len(cols) > 4 else '',
+                            'Pct_Vol': cols[5].text.strip() if len(cols) > 5 else '',
+                            'Phase': cols[6].text.strip() if len(cols) > 6 else '',
+                            '5Day': cols[7].text.strip() if len(cols) > 7 else '',
+                            '3Month': cols[8].text.strip() if len(cols) > 8 else '',
+                            '6Month': cols[9].text.strip() if len(cols) > 9 else '',
+                            'YTD': cols[10].text.strip() if len(cols) > 10 else '',
+                            'TSI': cols[11].text.strip() if len(cols) > 11 else '',
+                            'RM50': cols[12].text.strip() if len(cols) > 12 else '',
+                            'RM10': cols[13].text.strip() if len(cols) > 13 else '',
+                            'TP_P': cols[14].text.strip() if len(cols) > 14 else '',
+                            'TP_V': cols[15].text.strip() if len(cols) > 15 else '',
                         })
                         print(f"✅ Parsed data for {symbol_text}")
                     except Exception as e:
                         print(f"⚠️  Error parsing {symbol_text}: {e}")
+                        import traceback
+                        traceback.print_exc()
     
     if not data:
         print("❌ No target symbols found in any table")
@@ -192,10 +195,10 @@ def generate_csv_report(data, output_dir='data'):
     df['Date'] = datetime.now().strftime('%Y-%m-%d')
     df['Timestamp'] = datetime.now().isoformat()
     
-    # Reorder columns
-    columns_order = ['Date', 'Timestamp', 'Symbol', 'Description', 'Last', 'Change', 
-                     'Pct_Change', '5Day', '3Month', '6Month', 'YTD', 'TSI', 
-                     'Phase', 'RM50', 'RM10']
+    # Reorder columns - correct order with all fields
+    columns_order = ['Date', 'Timestamp', 'Symbol', 'Description', 'Last', 'Pct_Change', 
+                     'Pct_Hi', 'Pct_Vol', '5Day', '3Month', '6Month', 'YTD', 'TSI', 
+                     'Phase', 'RM50', 'RM10', 'TP_P', 'TP_V']
     df = df[[col for col in columns_order if col in df.columns]]
     
     # Save daily CSV
@@ -203,18 +206,19 @@ def generate_csv_report(data, output_dir='data'):
     df.to_csv(csv_path, index=False)
     
     print(f"✅ Daily CSV saved: {csv_path}")
+    print(f"   Columns: {', '.join(df.columns.tolist())}")
     
     return True, df
 
 def update_tsi_history(data, output_dir='data'):
-    """Update TSI history CSV with latest values"""
+    """Update TSI history CSV with latest values - ALL relevant fields"""
     if not data:
         print("❌ No data to update TSI history")
         return False
     
     os.makedirs(output_dir, exist_ok=True)
     
-    # Extract TSI values for SPY and QQQ
+    # Extract all relevant values for SPY and QQQ
     date_str = datetime.now().strftime('%Y-%m-%d')
     timestamp = datetime.now().isoformat()
     
@@ -225,10 +229,20 @@ def update_tsi_history(data, output_dir='data'):
                 'Date': date_str,
                 'Timestamp': timestamp,
                 'Symbol': item['Symbol'],
+                'Last': item['Last'],
+                'Pct_Change': item['Pct_Change'],
+                'Pct_Hi': item['Pct_Hi'],
+                'Pct_Vol': item['Pct_Vol'],
+                '5Day': item['5Day'],
+                '3Month': item['3Month'],
+                '6Month': item['6Month'],
+                'YTD': item['YTD'],
                 'TSI': item['TSI'],
                 'Phase': item['Phase'],
                 'RM50': item['RM50'],
-                'RM10': item['RM10']
+                'RM10': item['RM10'],
+                'TP_P': item['TP_P'],
+                'TP_V': item['TP_V'],
             })
     
     history_path = os.path.join(output_dir, 'shazam-tsi-history.csv')
@@ -314,6 +328,7 @@ def call_gemini_api(prompt, api_key, retries=3):
                 time.sleep(wait_time)
             else:
                 print("🚨 All retry attempts failed.")
+                import traceback
                 print(traceback.format_exc())
                 return None
 
@@ -406,18 +421,20 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
             border-collapse: collapse;
             margin-top: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+            overflow-x: auto;
         }}
         
         .data-table th {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 12px;
             text-align: right;
             font-weight: 600;
         }}
         
         .data-table td {{
-            padding: 12px 15px;
+            padding: 10px 12px;
             text-align: right;
             border-bottom: 1px solid #e0e0e0;
         }}
@@ -472,6 +489,16 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
             color: white;
         }}
         
+        .badge-reco {{
+            background: #6366f1;
+            color: white;
+        }}
+        
+        .badge-accu {{
+            background: #0ea5e9;
+            color: white;
+        }}
+        
         .analysis-box {{
             background: #f8f9fa;
             border-right: 4px solid #667eea;
@@ -507,7 +534,7 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
             }}
             
             .data-table {{
-                font-size: 0.9em;
+                font-size: 0.8em;
             }}
         }}
     </style>
@@ -522,20 +549,26 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
         <div class="content">
             <div class="section">
                 <h2>📈 Market Data Overview</h2>
+                <div style="overflow-x: auto;">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Symbol</th>
                             <th>Description</th>
                             <th>Last</th>
-                            <th>Change</th>
+                            <th>%Chg</th>
+                            <th>%Hi</th>
+                            <th>%Vol</th>
+                            <th>Phase</th>
                             <th>5-Day</th>
                             <th>3-Month</th>
                             <th>6-Month</th>
+                            <th>YTD</th>
                             <th>TSI</th>
-                            <th>Phase</th>
                             <th>RM50</th>
                             <th>RM10</th>
+                            <th>TP-P</th>
+                            <th>TP-V</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -561,29 +594,37 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
         except:
             month6_class = 'neutral'
         
-        # Determine badge class for indicators
-        rm50_badge = 'badge-bull' if 'BULL' in str(row['RM50']) else 'badge-bear' if 'BEAR' in str(row['RM50']) else 'badge-warn'
-        rm10_badge = 'badge-bull' if 'BULL' in str(row['RM10']) else 'badge-bear' if 'BEAR' in str(row['RM10']) else 'badge-dist' if 'DIST' in str(row['RM10']) else 'badge-warn'
+        # Determine badge classes for indicators
+        rm50_badge = 'badge-bull' if 'BULL' in str(row['RM50']) else 'badge-bear' if 'BEAR' in str(row['RM50']) else 'badge-reco' if 'RECO' in str(row['RM50']) else 'badge-warn'
+        rm10_badge = 'badge-bull' if 'BULL' in str(row['RM10']) else 'badge-bear' if 'BEAR' in str(row['RM10']) else 'badge-dist' if 'DIST' in str(row['RM10']) else 'badge-accu' if 'ACCU' in str(row['RM10']) else 'badge-warn'
+        tp_p_badge = 'badge-bull' if 'BULL' in str(row['TP_P']) else 'badge-bear' if 'BEAR' in str(row['TP_P']) else 'badge-warn'
+        tp_v_badge = 'badge-bull' if 'BULL' in str(row['TP_V']) else 'badge-bear' if 'BEAR' in str(row['TP_V']) else 'badge-warn'
         
         html_content += f"""
                         <tr>
                             <td class="symbol-highlight">{row['Symbol']}</td>
                             <td>{row['Description']}</td>
                             <td>{row['Last']}</td>
-                            <td>{row['Change']}</td>
+                            <td>{row['Pct_Change']}</td>
+                            <td>{row['Pct_Hi']}</td>
+                            <td>{row['Pct_Vol']}</td>
+                            <td>{row['Phase']}</td>
                             <td class="{day5_class}">{row['5Day']}%</td>
                             <td class="{month3_class}">{row['3Month']}%</td>
                             <td class="{month6_class}">{row['6Month']}%</td>
+                            <td>{row['YTD']}</td>
                             <td>{row['TSI']}</td>
-                            <td>{row['Phase']}</td>
                             <td><span class="badge {rm50_badge}">{row['RM50']}</span></td>
                             <td><span class="badge {rm10_badge}">{row['RM10']}</span></td>
+                            <td><span class="badge {tp_p_badge}">{row['TP_P']}</span></td>
+                            <td><span class="badge {tp_v_badge}">{row['TP_V']}</span></td>
                         </tr>
 """
     
     html_content += """
                     </tbody>
                 </table>
+                </div>
             </div>
             
             <div class="section">
@@ -655,40 +696,57 @@ def main():
     ai_analysis = None
     
     if gemini_api_key:
-        # Create prompt for Gemini
+        # Create prompt for Gemini with CORRECT field mapping
         prompt = f"""You are analyzing market data from MarketGauge for {datetime.now().strftime('%Y-%m-%d')}.
 
 Here is the current market data:
 
 {df.to_string()}
 
-Please provide a comprehensive market analysis report following this structure (Market-report-1 format):
+IMPORTANT: Use ONLY the actual column values provided above. Each row represents:
+- Symbol: S&P 500 (SPY) or Nasdaq 100 (QQQ) etc.
+- Last: Current price
+- %Chg: Percent change today
+- %Hi: Percent from 52-week high
+- %Vol: Percent volume deviation
+- Phase: Current phase (BULLISH/BEARISH)
+- 5Day: 5-day performance %
+- 3Month: 3-month performance %
+- 6Month: 6-month performance %
+- YTD: Year-to-date performance %
+- TSI: True Strength Index value
+- RM50: 50-day moving average relative position
+- RM10: 10-day moving average relative position
+- TP-P: Price target positioning
+- TP-V: Volume target positioning
+
+Please provide a comprehensive market analysis report following this structure:
 
 ## **Market Report - S&P 500 & Nasdaq 100**
 **Source: MarketGauge Big View | Date: {datetime.now().strftime('%Y-%m-%d')}**
 
 ### **S&P 500 (SPY)**
-Analyze:
-- Short-term (5-day): Status and trend
-- Medium-term (3-month): Status and trend  
-- Long-term (6-month): Status and trend
-- Technical indicators (Phase, RM50, RM10, TSI)
+Analyze using ONLY the SPY row data:
+- Short-term (5-day): [actual 5Day value] - Status and trend
+- Medium-term (3-month): [actual 3Month value] - Status and trend  
+- Long-term (6-month): [actual 6Month value] - Status and trend
+- Technical indicators: Phase=[Phase], TSI=[TSI], RM50=[RM50], RM10=[RM10]
 
 ### **Nasdaq 100 (QQQ)**
-Same structure as SPY
+Same structure using ONLY QQQ row data
 
 ### **Critical Comparison**
-- Performance divergence across timeframes
-- Momentum shifts
-- Warning signs
+- Compare 5-day, 3-month, 6-month performances
+- Compare technical indicators between SPY and QQQ
+- Identify divergences
 
 ### **Summary**
-- Short-term outlook
-- Medium-term outlook
-- Long-term outlook
-- Key alerts
+- Short-term outlook based on data
+- Medium-term outlook based on data
+- Long-term outlook based on data
+- Key alerts or observations
 
-Be direct and specific. Use the exact numbers from the data. Format for HTML display."""
+Be direct and specific. Use the exact numbers from the data table. Format for HTML display."""
 
         ai_analysis = call_gemini_api(prompt, gemini_api_key)
     
@@ -711,9 +769,3 @@ Be direct and specific. Use the exact numbers from the data. Format for HTML dis
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
