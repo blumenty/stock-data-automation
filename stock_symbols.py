@@ -104,7 +104,7 @@ SP500_STOCKS = [
 'SIRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN',
+'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
 ]
 
 # Top ETFs (exact same as your Dart code - 37 ETFs)
@@ -132,6 +132,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
