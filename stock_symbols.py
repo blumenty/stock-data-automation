@@ -48,7 +48,7 @@ TA125_STOCKS = [
 
 # S&P 500 Stocks (exact same as your Dart code) 
 SP500_STOCKS = [
-  'AAL', 'FI', 'META', 'MRK', 'RHI', 'IBKR', 'EME', 'WSM', 'TKO', 'TTD',
+'META', 'MRK', 'IBKR', 'EME', 'WSM', 'TKO', 'TTD',
 'WDAY', 'AMCR', 'MO', 'COF', 'CPT', 'CPB', 'EG', 'EVRG', 'FISV', 'KDP',
 'MLM', 'VLTO', 'MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES',
 'AFL', 'A', 'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT',
@@ -75,7 +75,7 @@ SP500_STOCKS = [
 'HD', 'HON', 'HRL', 'HST', 'HWM', 'HPQ', 'HUBB', 'HUM', 'HBAN', 'HII',
 'IBM', 'IEX', 'IDXX', 'ITW', 'INCY', 'IR', 'PODD', 'INTC', 'ICE', 'IFF',
 'IP', 'SNDK', 'INTU', 'ISRG', 'IVZ', 'INVH', 'IQV', 'IRM', 'JBHT', 'JBL',
-'JKHY', 'J', 'JNJ', 'JCI', 'JPM', 'DDOG', 'K', 'KVUE', 'KEY', 'KEYS',
+'JKHY', 'J', 'JNJ', 'JCI', 'JPM', 'DDOG', 'KVUE', 'KEY', 'KEYS',
 'KMB', 'KIM', 'KMI', 'KKR', 'KLAC', 'KHC', 'KR', 'LHX', 'LH', 'LRCX',
 'LW', 'LVS', 'LDOS', 'LEN', 'LLY', 'LIN', 'LYV', 'CRH', 'LMT', 'LII',
 'L', 'LOW', 'LULU', 'LYB', 'MTB', 'TPL', 'MPC', 'MAR', 'MMC', 'MAS',
@@ -98,13 +98,13 @@ SP500_STOCKS = [
 'VTR', 'VRSN', 'VRSK', 'VZ', 'VRTX', 'VTRS', 'VICI', 'V', 'VST', 'VMC',
 'WRB', 'GWW', 'WAB', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC',
 'WELL', 'WST', 'WDC', 'WY', 'WMB', 'EXE', 'WTW', 'WYNN', 'XEL', 'XYL',
-'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD',
+'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES',
 #
 'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP', 'ZS', 'MRVL',
 'SIRI', 'FER', 'ALNY', 'INSM', 'TRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
+'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS',
 #
 'ESLT',
 ]
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
