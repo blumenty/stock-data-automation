@@ -104,7 +104,7 @@ SP500_STOCKS = [
 'SIRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
+'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS', 'SNDK',
 #
 'ESLT',
 ]
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
