@@ -62,7 +62,7 @@ SP500_STOCKS = [
 'CRL', 'SCHW', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF', 'CTAS',
 'CSCO', 'C', 'CFG', 'CLX', 'CME', 'CMS', 'KO', 'CTSH', 'COIN', 'CL',
 'CMCSA', 'CAG', 'COP', 'ED', 'STZ', 'CEG', 'COO', 'CPRT', 'GLW', 'CTVA',
-'SOLS', 'CSGP', 'COST', 'CTRA', 'CRWD', 'CCI', 'CSX', 'CMI', 'CVS', 'DHR',
+'CVNA', 'CSGP', 'COST', 'CTRA', 'CRWD', 'CCI', 'CSX', 'CMI', 'CVS', 'DHR',
 'DRI', 'DVA', 'DAY', 'DECK', 'DE', 'DELL', 'DAL', 'DVN', 'DXCM', 'FANG',
 'DLR', 'DG', 'DLTR', 'D', 'DPZ', 'DASH', 'DOV', 'DOW', 'DHI', 'DTE',
 'DUK', 'DD', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'ELV', 'EMR',
@@ -74,13 +74,13 @@ SP500_STOCKS = [
 'HAL', 'HIG', 'HAS', 'HCA', 'DOC', 'HSIC', 'HSY', 'HPE', 'HLT', 'HOLX',
 'HD', 'HON', 'HRL', 'HST', 'HWM', 'HPQ', 'HUBB', 'HUM', 'HBAN', 'HII',
 'IBM', 'IEX', 'IDXX', 'ITW', 'INCY', 'IR', 'PODD', 'INTC', 'ICE', 'IFF',
-'IP', 'IPG', 'INTU', 'ISRG', 'IVZ', 'INVH', 'IQV', 'IRM', 'JBHT', 'JBL',
+'IP', 'SNDK', 'INTU', 'ISRG', 'IVZ', 'INVH', 'IQV', 'IRM', 'JBHT', 'JBL',
 'JKHY', 'J', 'JNJ', 'JCI', 'JPM', 'DDOG', 'K', 'KVUE', 'KEY', 'KEYS',
 'KMB', 'KIM', 'KMI', 'KKR', 'KLAC', 'KHC', 'KR', 'LHX', 'LH', 'LRCX',
-'LW', 'LVS', 'LDOS', 'LEN', 'LLY', 'LIN', 'LYV', 'LKQ', 'LMT', 'LII',
+'LW', 'LVS', 'LDOS', 'LEN', 'LLY', 'LIN', 'LYV', 'CRH', 'LMT', 'LII',
 'L', 'LOW', 'LULU', 'LYB', 'MTB', 'TPL', 'MPC', 'MAR', 'MMC', 'MAS',
 'MA', 'MTCH', 'MKC', 'MCD', 'MCK', 'MDT', 'MET', 'MTD', 'MGM', 'MCHP',
-'MU', 'MSFT', 'MAA', 'MRNA', 'MHK', 'MOH', 'TAP', 'MDLZ', 'MPWR', 'MNST',
+'MU', 'MSFT', 'MAA', 'MRNA', 'FIX', 'MOH', 'TAP', 'MDLZ', 'MPWR', 'MNST',
 'MCO', 'MS', 'MOS', 'MSI', 'MSCI', 'NDAQ', 'NTAP', 'NFLX', 'NEM', 'NWSA',
 'NWS', 'NEE', 'NKE', 'NI', 'NDSN', 'NSC', 'NTRS', 'NOC', 'NCLH', 'NRG',
 'NUE', 'NVDA', 'NVR', 'NXPI', 'ORLY', 'OXY', 'ODFL', 'OMC', 'ON', 'OKE',
@@ -104,7 +104,7 @@ SP500_STOCKS = [
 'SIRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS', 'SNDK',
+'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
 #
 'ESLT',
 ]
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
