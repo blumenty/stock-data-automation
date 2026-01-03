@@ -100,8 +100,8 @@ SP500_STOCKS = [
 'WELL', 'WST', 'WDC', 'WY', 'WMB', 'EXE', 'WTW', 'WYNN', 'XEL', 'XYL',
 'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD',
 #
-'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'MDB', 'ZS', 'MRVL',
-'SIRI',
+'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP', 'ZS', 'MRVL',
+'SIRI', 'FER', 'ALNY', 'INSM', 'TRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
 'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
