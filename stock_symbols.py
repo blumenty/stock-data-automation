@@ -105,6 +105,8 @@ SP500_STOCKS = [
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
 'IONQ', 'NXE', 'CLS', 'ASML', 'GES', 'ILMN', 'GFS',
+#
+'ESLT',
 ]
 
 # Top ETFs (exact same as your Dart code - 37 ETFs)
@@ -112,7 +114,7 @@ TOP_ETFS = [
     # Original Top Performing ETFs (37)
     'WGMI', 'EUAD', 'SHLD', 'STCE', 'PSIL', 'BKCH', 'GREK', 'ARKW', 'EWY', 'KEMQ',
     'HYDR', 'UFO', 'CNXT', 'DAPP', 'BLOK', 'EWP', 'EPOL', 'CTEC', 'FGM', 'AFK', 'DECO',
-    'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLVP', 'RING', 'GDX', 'SIL', 'URA', 'DMAT', 'COPJ',
+    'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLV', 'RING', 'GDX', 'SIL', 'URA', 'DMAT', 'COPJ',
     'NLR', 'BTGD', 'PPLT', 'IBLC', 'XME',
     
     # Additional ETFs from PDF (70)
@@ -132,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
