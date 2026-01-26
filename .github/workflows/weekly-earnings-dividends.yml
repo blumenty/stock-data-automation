@@ -46,7 +46,7 @@ jobs:
         git config --local user.name "GitHub Action"
         git pull --rebase origin main || true
         git add data/*.csv data/*.json
-        git diff --staged --quiet || git commit -m "Update stock data (TA125, SP500, ETFs) - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+        git diff --staged --quiet || git commit -m "Earnings and Dividends - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,4 +58,5 @@ jobs:
         path: data/Shazam-Stock-Earn-Div.csv
 
         retention-days: 30
+
 
