@@ -29,6 +29,8 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass
 import asyncio
 
+from stock_symbols import TA125_STOCKS
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -513,60 +515,42 @@ class IBKRService:
             log.info('📡 Switched to live market data')
 
 
-# TA-125 Stocks for IBKR (same list, converted to IBKR format)
-TA125_STOCKS_IBKR = [
-    # These are the same stocks from your Dart implementation
-    # Comment/uncomment as needed
-    
-    # Banks & Financial Services
-    # 'DSCT', 'POLI', 'LUMI', 'MZTF', 'FIBI', 'IBI',
-    # 'AMOT', 'EQTL', 'MTAV', 'ISRS', 'MNIF', 'TASE',
-    # 'KEN', 'HARL', 'CLIS', 'MMHD', 'MGDL', 'ISCD',
-    
-    # Technology & Healthcare
-    # 'TEVA', 'ESLT', 'NVMI', 'NICE', 'TSEM', 'CAMT',
-    # 'NYAX', 'ONE', 'SPNS', 'FORTY', 'MTRX', 'HLAN',
-    # 'MGIC', 'TLSY', 'MLTM', 'NXSN', 'PRTC',
-    
-    # ... add more as needed
-]
-
-
 def main():
-    """Example usage of IBKR Service"""
-    
+    """Download TA125 stocks from IBKR"""
+
+    print(f"\n=== IBKR Service for TA125 Stocks ===")
+    print(f"Total symbols to download: {len(TA125_STOCKS)}")
+
     # Create service (will connect to TWS on default port 7497)
+    # Use use_gateway=True if using IB Gateway instead of TWS
     service = IBKRService()
-    
+
     # Check health
     print("\n=== Checking Service Health ===")
     health = service.check_service_health()
     print(f"Health: {health}")
-    
+
     if not health['isHealthy']:
         print("\n❌ Service is not healthy. Make sure:")
         print("   1. TWS or IB Gateway is running")
         print("   2. API is enabled in TWS/Gateway settings")
         print("   3. Port 7497 (TWS) or 4001 (Gateway) is correct")
         return
-    
-    # Request delayed data if you don't have a subscription
+
+    # Request delayed data if you don't have a market data subscription
     service.request_delayed_data()
-    
-    # Fetch single stock
-    print("\n=== Fetching Single Stock ===")
-    data = service.fetch_stock_data('TEVA.TA', days=30)
-    if data:
-        print(f"Got {len(data)} days of data for TEVA")
-        for d in data[-5:]:  # Print last 5 days
-            print(f"  {d.date.strftime('%Y-%m-%d')}: O={d.open:.2f} H={d.high:.2f} L={d.low:.2f} C={d.close:.2f} V={d.volume}")
-    
-    # Fetch multiple stocks
-    print("\n=== Fetching Multiple Stocks ===")
-    test_symbols = ['TEVA.TA', 'NICE.TA', 'ESLT.TA']  # Small test batch
-    results = service.fetch_multiple_stocks_with_breaks(test_symbols, days=30)
-    print(f"Successfully fetched: {list(results.keys())}")
-    
+
+    # Fetch all TA125 stocks
+    print(f"\n=== Fetching {len(TA125_STOCKS)} TA125 Stocks ===")
+    results = service.fetch_multiple_stocks_with_breaks(TA125_STOCKS, days=30)
+
+    print(f"\n=== Summary ===")
+    print(f"Successfully fetched: {len(results)}/{len(TA125_STOCKS)} stocks")
+    print(f"Failed: {len(TA125_STOCKS) - len(results)} stocks")
+
+    if results:
+        print(f"\nSuccessful symbols: {list(results.keys())}")
+
     # Disconnect
     service.disconnect()
 
