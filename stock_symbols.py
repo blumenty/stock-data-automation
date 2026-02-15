@@ -63,7 +63,7 @@ SP500_STOCKS = [
 'CSCO', 'C', 'CFG', 'CLX', 'CME', 'CMS', 'KO', 'CTSH', 'COIN', 'CL',
 'CMCSA', 'CAG', 'COP', 'ED', 'STZ', 'CEG', 'COO', 'CPRT', 'GLW', 'CTVA',
 'CVNA', 'CSGP', 'COST', 'CTRA', 'CRWD', 'CCI', 'CSX', 'CMI', 'CVS', 'DHR',
-'DRI', 'DVA', 'DAY', 'DECK', 'DE', 'DELL', 'DAL', 'DVN', 'DXCM', 'FANG',
+'DRI', 'DVA', 'CIEN', 'DECK', 'DE', 'DELL', 'DAL', 'DVN', 'DXCM', 'FANG',
 'DLR', 'DG', 'DLTR', 'D', 'DPZ', 'DASH', 'DOV', 'DOW', 'DHI', 'DTE',
 'DUK', 'DD', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'ELV', 'EMR',
 'ETR', 'EOG', 'EPAM', 'EQT', 'EFX', 'EQIX', 'EQR', 'ERIE', 'ESS', 'EL',
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
