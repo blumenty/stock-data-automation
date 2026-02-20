@@ -104,7 +104,7 @@ SP500_STOCKS = [
 'SIRI', 'FER', 'ALNY', 'INSM', 'TRI',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS',
+'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS', 'FLR',
 #
 'ESLT',
 ]
@@ -119,7 +119,7 @@ TOP_ETFS = [
     
     # Additional ETFs from PDF (70)
     'AIA', 'ARKF', 'ARKO', 'BKF', 'BOTZ', 'CANE', 'CGW', 'CLNE', 'COPX', 'CORN',
-    'CRBN', 'DBA', 'DBB', 'DBC', 'DIA', 'EEM', 'EFA', 'FLR', 'FXI', 'GLD',
+    'CRBN', 'DBA', 'DBB', 'DBC', 'DIA', 'EEM', 'EFA', 'FXI', 'GLD',
     'GRNY', 'IBB', 'IBIT', 'ILF', 'INDA', 'ITB', 'IWD', 'IWM', 'IYR', 'IYT',
     'IZRL', 'MAGS', 'MJ', 'MOO', 'MTUM', 'OEF', 'OIH', 'PBW', 'PHO', 'PPA',
     'QQQ', 'ROBT', 'RSP', 'SMH', 'SOYB', 'SPY', 'TAN', 'UNG', 'VGK', 'VGT',
@@ -134,6 +134,7 @@ def get_all_symbols():
         'SP500': SP500_STOCKS,
         'ETFs': TOP_ETFS,
     }
+
 
 
 
