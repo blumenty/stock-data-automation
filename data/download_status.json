@@ -1,7 +1,7 @@
 {
-  "last_update": "2026-02-25T08:47:22.215096",
-  "start_time": "2026-02-25T06:04:25.150238",
-  "duration_seconds": 9777.064858,
+  "last_update": "2026-02-26T08:43:33.431036",
+  "start_time": "2026-02-26T06:00:35.522345",
+  "duration_seconds": 9777.908691,
   "ta125_symbols": 0,
   "sp500_symbols": 536,
   "etf_symbols": 106,
@@ -13,7 +13,7 @@
     "etf_service": "Polygon.io",
     "polygon_health": {
       "isHealthy": true,
-      "responseTime": 290.663,
+      "responseTime": 280.84,
       "status": "Connected",
       "apiLimitRemaining": null,
       "testSymbol": "AAPL"
