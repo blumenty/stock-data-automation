@@ -110,9 +110,10 @@ class EarningsDividendsService:
             # Break every 5 requests (free tier limit)
             if (i + 1) % 5 == 0 and i < len(symbols) - 1:
                 log.info('😴 Mandatory 2-minute break after 5 requests')
-                time.sleep(120)
+                time.sleep(45)
         
         log.info(f'✅ Completed dividend data fetch for {len(results)} symbols')
 
         return results
+
 
