@@ -2,8 +2,8 @@ name: TA Stock Data Automation
 
 on:
   schedule:
-    # Run at 5 PM UTC daily (Sun-Thu = TASE trading days, triggers Tue-Sat UTC)
-    - cron: '0 17 * * 2-6'
+    # Run at 5 PM UTC daily (Mo-Fr = TASE trading days, triggers Tue-Sat UTC)
+    - cron: '0 17 * * 1-5'
   workflow_dispatch: # Allow manual trigger
   push:
     branches: [ main ]
@@ -67,4 +67,5 @@ jobs:
           data/Shazam-Stock-Info-TA125.csv
           data/Shazam-Stock-Info-ETFIL.csv
           data/download_status.json
+
         retention-days: 30
