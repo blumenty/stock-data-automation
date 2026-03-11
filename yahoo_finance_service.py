@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Yahoo Finance Service - Python Mirror of Dart Implementation
-Fetches stock data with anti-detection measures and rate limiting
+Yahoo Finance Service - Python mirror of Dart implementation.
+Fetches TASE / IL stock data with anti-detection, IP rotation,
+real crumb/cookie session management, and correct UTC date parsing.
 """
 
 import requests
@@ -9,18 +10,24 @@ import json
 import time
 import random
 import logging
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
-import csv
-import os
+from datetime import datetime, timedelta, date
+from typing import List, Dict, Optional
 from dataclasses import dataclass
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(levelname)s] %(message)s'
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
 )
 log = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# TASE trading-day schedule
+#   Before 05 Jan 2026 : Sun–Thu  (weekday 6, 0-3 in Python)
+#   From   05 Jan 2026 : Mon–Fri  (weekday 0-4 in Python)
+# ---------------------------------------------------------------------------
+TASE_SCHEDULE_CHANGE = date(2026, 1, 5)
+
 
 @dataclass
 class StockData:
@@ -32,62 +39,127 @@ class StockData:
     close: float
     volume: int
 
+
 class YahooFinanceService:
-    BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart"
+    BASE_URL  = 'https://query1.finance.yahoo.com/v8/finance/chart'
+    CRUMB_URL = 'https://query1.finance.yahoo.com/v1/test/getcrumb'
+    CONSENT_URL = 'https://finance.yahoo.com/'
     TIMEOUT = 30
-    
-    # Anti-detection measures (MORE CONSERVATIVE)
-    MIN_REQUEST_DELAY = 25.0   # 2000ms (increased from 500ms)
-    MAX_REQUEST_DELAY = 30.0   # 5000ms (increased from 2000ms)
-    RETRY_BACKOFF_BASE = 20    # 5 seconds (increased from 2s)
-    MAX_RETRIES = 5
-    
-    # Rate limiting (MORE CONSERVATIVE)
-    MAX_REQUESTS_PER_MINUTE = 15  # Reduced from 30 to 15
-    
-    # User agents for rotation (exact same as Dart)
+
+    # Delays (seconds) — kept conservative for a server/CI context
+    MIN_DELAY      = 2.0
+    MAX_DELAY      = 6.0
+    BATCH_BREAK    = 12.0   # extra pause every BATCH_SIZE requests
+    BATCH_SIZE     = 10
+    RETRY_BASE     = 5      # seconds, doubles per attempt
+    MAX_RETRIES    = 5
+
+    MAX_REQ_PER_MIN = 20
+
+    # Modern user-agents (Chrome 131 / Firefox 133 / Safari 17 — early 2025)
     USER_AGENTS = [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
     ]
-    
+
+    # Random IP pools for X-Forwarded-For spoofing
+    _IP_RANGES = [
+        # Residential-looking ranges
+        ('82.80.0.0',   '82.80.255.255'),
+        ('84.94.0.0',   '84.94.255.255'),
+        ('93.172.0.0',  '93.172.255.255'),
+        ('109.64.0.0',  '109.64.255.255'),
+        ('151.200.0.0', '151.200.255.255'),
+        ('176.12.0.0',  '176.12.255.255'),
+        ('188.120.0.0', '188.120.255.255'),
+        ('212.143.0.0', '212.143.255.255'),
+        ('5.100.0.0',   '5.100.255.255'),
+        ('37.26.0.0',   '37.26.255.255'),
+    ]
+
     def __init__(self):
-        self.last_request_time = None
-        self.request_count = 0
-        self.session = requests.Session()
-    
-    def _apply_rate_limit(self):
-        """Apply intelligent rate limiting (EXACT same as Dart)"""
-        now = datetime.now()
-        
-        # Reset counter every minute (exact same as Dart)
-        if (self.last_request_time is None or 
-            (now - self.last_request_time).total_seconds() >= 60):
-            self.request_count = 0
-        
-        # Check if we're hitting rate limits (exact same as Dart)
-        if self.request_count >= self.MAX_REQUESTS_PER_MINUTE:
-            wait_time = 60 - now.second
-            log.info(f'🐌 Rate limit reached, waiting {wait_time}s')
-            time.sleep(wait_time)
-            self.request_count = 0
-        
-        # Add random delay between requests (EXACT same as Dart)
-        delay_ms = self.MIN_REQUEST_DELAY * 1000 + random.randint(0, int((self.MAX_REQUEST_DELAY - self.MIN_REQUEST_DELAY) * 1000))
-        delay_seconds = delay_ms / 1000.0
-        time.sleep(delay_seconds)
-        
-        self.last_request_time = now
-        self.request_count += 1
-    
-    def _get_anti_detection_headers(self) -> Dict[str, str]:
-        """Generate anti-detection headers (exact same as Dart)"""
-        return {
-            'User-Agent': random.choice(self.USER_AGENTS),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        self._session = requests.Session()
+        self._crumb: Optional[str] = None
+        self._last_req_time: Optional[datetime] = None
+        self._req_count = 0
+
+    # -----------------------------------------------------------------------
+    # Session / crumb bootstrap
+    # -----------------------------------------------------------------------
+
+    def _bootstrap_session(self) -> bool:
+        """
+        Visit Yahoo Finance to pick up cookies, then fetch a real crumb.
+        This is required since Yahoo deprecated the fake-crumb approach.
+        Returns True on success.
+        """
+        try:
+            log.info('🔑 Bootstrapping Yahoo Finance session (cookie + crumb)…')
+            headers = self._base_headers()
+            # Step 1 – land on the home page to get consent cookie
+            r = self._session.get(
+                self.CONSENT_URL,
+                headers=headers,
+                timeout=self.TIMEOUT,
+                allow_redirects=True,
+            )
+            if r.status_code not in (200, 301, 302):
+                log.warning(f'⚠️ Consent page returned {r.status_code}')
+
+            time.sleep(random.uniform(1.0, 2.5))
+
+            # Step 2 – fetch a real crumb
+            crumb_headers = self._base_headers()
+            crumb_headers['Referer'] = 'https://finance.yahoo.com/'
+            r2 = self._session.get(
+                self.CRUMB_URL,
+                headers=crumb_headers,
+                timeout=self.TIMEOUT,
+            )
+            if r2.status_code == 200 and r2.text.strip():
+                self._crumb = r2.text.strip()
+                log.info(f'✅ Got real crumb: {self._crumb[:6]}…')
+                return True
+            else:
+                log.warning(f'⚠️ Crumb fetch returned {r2.status_code}, falling back to random crumb')
+                self._crumb = self._random_crumb()
+                return False
+        except Exception as e:
+            log.warning(f'⚠️ Session bootstrap failed: {e}  — using random crumb')
+            self._crumb = self._random_crumb()
+            return False
+
+    def _ensure_crumb(self):
+        if self._crumb is None:
+            self._bootstrap_session()
+
+    # -----------------------------------------------------------------------
+    # Header / IP helpers
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _random_ip() -> str:
+        start_ip, end_ip = random.choice(YahooFinanceService._IP_RANGES)
+        parts_s = [int(p) for p in start_ip.split('.')]
+        parts_e = [int(p) for p in end_ip.split('.')]
+        ip = '.'.join(
+            str(random.randint(parts_s[i], parts_e[i])) for i in range(4)
+        )
+        return ip
+
+    def _base_headers(self) -> Dict[str, str]:
+        ua = random.choice(self.USER_AGENTS)
+        ip = self._random_ip()
+        # Pick a realistic sec-ch-ua for Chrome or skip for Firefox/Safari
+        is_chrome = 'Chrome' in ua
+        headers: Dict[str, str] = {
+            'User-Agent': ua,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9,he;q=0.8',
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': '1',
@@ -98,227 +170,228 @@ class YahooFinanceService:
             'Sec-Fetch-Site': 'none',
             'Cache-Control': 'max-age=0',
             'Referer': 'https://finance.yahoo.com/',
+            # Fake-IP headers (some CDNs/proxies forward these; Yahoo may respect them)
+            'X-Forwarded-For': ip,
+            'X-Real-IP': ip,
+            'Via': f'1.1 {ip}',
         }
-    
-    def _generate_random_crumb(self) -> str:
-        """Generate random crumb parameter (exact same as Dart)"""
+        if is_chrome:
+            chrome_ver = ua.split('Chrome/')[1].split('.')[0]
+            headers['sec-ch-ua'] = f'"Google Chrome";v="{chrome_ver}", "Chromium";v="{chrome_ver}", "Not-A.Brand";v="99"'
+            headers['sec-ch-ua-mobile'] = '?1' if 'Mobile' in ua else '?0'
+            headers['sec-ch-ua-platform'] = '"Android"' if 'Android' in ua else ('"macOS"' if 'Mac' in ua else '"Windows"')
+        return headers
+
+    @staticmethod
+    def _random_crumb() -> str:
         chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         return ''.join(random.choice(chars) for _ in range(11))
-    
-    def _is_us_market_symbol(self, symbol: str) -> bool:
-        """Check if symbol is from US market (exact same as Dart)"""
-        return not (symbol.endswith('.TA') or symbol.endswith('.TLV'))
-    
-    def _is_trading_day(self, date: datetime, is_us_market: bool) -> bool:
-        """Check if date is a trading day (exact same logic as Dart)"""
-        weekday = date.weekday()  # 0=Monday, 6=Sunday
-        
-        if is_us_market:
-            # US markets: Monday-Friday (0-4)
-            return 0 <= weekday <= 4
-        else:
-            # TASE markets: Sunday-Thursday (6, 0-3)
-            return weekday == 6 or 0 <= weekday <= 3
-    
-    def _get_last_trading_day(self, symbol: str) -> datetime:
-        """Get last complete trading day (exact same logic as Dart)"""
+
+    # -----------------------------------------------------------------------
+    # Rate limiting
+    # -----------------------------------------------------------------------
+
+    def _rate_limit(self):
         now = datetime.now()
-        is_us_market = self._is_us_market_symbol(symbol)
-        
-        current = now
+        if (self._last_req_time is None or
+                (now - self._last_req_time).total_seconds() >= 60):
+            self._req_count = 0
+
+        if self._req_count >= self.MAX_REQ_PER_MIN:
+            wait = max(1, 60 - now.second)
+            log.info(f'🐌 Rate limit reached, waiting {wait}s')
+            time.sleep(wait)
+            self._req_count = 0
+
+        delay = self.MIN_DELAY + random.uniform(0, self.MAX_DELAY - self.MIN_DELAY)
+        time.sleep(delay)
+        self._last_req_time = now
+        self._req_count += 1
+
+    # -----------------------------------------------------------------------
+    # Trading-day logic (TASE + US)
+    # -----------------------------------------------------------------------
+
+    @staticmethod
+    def _is_il_symbol(symbol: str) -> bool:
+        return symbol.endswith('.TA') or symbol.endswith('.TLV')
+
+    @staticmethod
+    def _is_tase_trading_day(d: date) -> bool:
+        wd = d.weekday()  # Mon=0 … Sun=6
+        if d >= TASE_SCHEDULE_CHANGE:
+            return 0 <= wd <= 4   # Mon–Fri
+        else:
+            return wd == 6 or 0 <= wd <= 3  # Sun–Thu
+
+    @staticmethod
+    def _is_us_trading_day(d: date) -> bool:
+        return 0 <= d.weekday() <= 4   # Mon–Fri
+
+    def _is_trading_day(self, d: date, is_il: bool) -> bool:
+        return self._is_tase_trading_day(d) if is_il else self._is_us_trading_day(d)
+
+    def _get_last_trading_day(self, symbol: str) -> date:
+        """Return the last *completed* trading day (market already closed)."""
+        now = datetime.utcnow()
+        is_il = self._is_il_symbol(symbol)
+        # TASE closes ~15:25 UTC (18:25 IST); US closes ~21:00 UTC
+        market_close_utc = 16 if is_il else 21
+        current = now.date()
+
         while True:
-            if self._is_trading_day(current, is_us_market):
-                # Check if market has closed
-                if is_us_market:
-                    # US market closes at 4:00 PM ET (simplified)
-                    market_close_hour = 16
+            if self._is_trading_day(current, is_il):
+                if current < now.date() or now.hour >= market_close_utc:
+                    return current
                 else:
-                    # TASE closes at 5:25 PM Israel time (simplified)
-                    market_close_hour = 17
-                
-                if current.hour >= market_close_hour or current.date() < now.date():
-                    return current.replace(hour=0, minute=0, second=0, microsecond=0)
-                else:
-                    # Market still open, use previous trading day
                     current -= timedelta(days=1)
             else:
                 current -= timedelta(days=1)
-    
 
-    def _handle_rate_limiting(self):
-        """Handle rate limiting response (exact same as Dart)"""
-        # Increase delays for subsequent requests
-        self.request_count += 10  # Penalty (exact same as Dart)
-        log.info('🛡️ Applied rate limiting penalty')
-    
-    def fetch_stock_data(self, symbol: str, days: int = 50) -> Optional[List[StockData]]:
-        """Fetch stock data with enhanced caching and anti-detection (exact same as Dart)"""
-        try:
-            log.info(f'📊 Fetching {days} days of data for {symbol}')
-            
-            # Apply rate limiting and anti-detection delay
-            self._apply_rate_limit()
-            
-            last_trading_day = self._get_last_trading_day(symbol)
-            start_date = last_trading_day - timedelta(days=days + 15)
-            end_date = last_trading_day + timedelta(hours=23, minutes=59)
-            
-            # Build URL (exact same as Dart)
-            params = {
-                'period1': str(int(start_date.timestamp())),
-                'period2': str(int(end_date.timestamp())),
-                'interval': '1d',
-                'includePrePost': 'false',
-                'events': 'div,split',
-                'crumb': self._generate_random_crumb(),
-            }
-            
-            url = f"{self.BASE_URL}/{symbol}"
-            
-            log.info(f'Fetching {symbol} from {start_date.strftime("%d/%m/%Y")} to {end_date.strftime("%d/%m/%Y")}')
-            
-            # Execute request with retry and exponential backoff
-            response = self._execute_with_retry(url, params)
-            
-            if response is None:
-                log.error(f'❌ Failed to fetch {symbol} after all retries')
-                return None
-            
-            if response.status_code != 200:
-                log.error(f'❌ Error fetching {symbol}: HTTP {response.status_code}')
-                if response.status_code in [503, 429]:
-                    log.info('🛡️ Detected rate limiting - will increase delays')
-                    self._handle_rate_limiting()
-                return None
-            
-            data = response.json()
-            
-            if 'chart' not in data or not data['chart']['result']:
-                log.error(f'❌ Yahoo Finance API error for {symbol}')
-                return None
-            
-            stock_data_list = self._parse_yahoo_response(data, symbol)
-            
-            # Filter trading days only (exact same as Dart)
-            is_us_market = self._is_us_market_symbol(symbol)
-            trading_days_only = [
-                data for data in stock_data_list 
-                if self._is_trading_day(data.date, is_us_market)
-            ]
-            
-            # Sort and take last N days (exact same as Dart)
-            trading_days_only.sort(key=lambda x: x.date)
-            result = trading_days_only[-days:] if len(trading_days_only) > days else trading_days_only
-            
-            log.info(f'✅ Successfully fetched {len(result)} trading days for {symbol}')
-            return result
-            
-        except Exception as e:
-            log.error(f'❌ Exception fetching data for {symbol}: {e}')
-            return None
-    
+    # -----------------------------------------------------------------------
+    # HTTP execution
+    # -----------------------------------------------------------------------
+
     def _execute_with_retry(self, url: str, params: Dict) -> Optional[requests.Response]:
-        """Execute request with retry and exponential backoff (EXACT same as Dart)"""
         for attempt in range(1, self.MAX_RETRIES + 1):
             try:
-                headers = self._get_anti_detection_headers()
-                response = self.session.get(
-                    url, 
-                    params=params, 
-                    headers=headers, 
-                    timeout=self.TIMEOUT
-                )
-                
-                if response.status_code == 200:
-                    return response
-                
-                if response.status_code in [503, 429]:
+                headers = self._base_headers()
+                resp = self._session.get(url, params=params, headers=headers, timeout=self.TIMEOUT)
+                if resp.status_code == 200:
+                    return resp
+                if resp.status_code in (429, 503):
                     if attempt < self.MAX_RETRIES:
-                        # EXACT same backoff calculation as Dart
-                        backoff_delay = self.RETRY_BACKOFF_BASE * (2 ** (attempt - 1))
-                        log.warning(f'🔄 Rate limited, retrying in {backoff_delay}s (attempt {attempt}/{self.MAX_RETRIES})')
-                        time.sleep(backoff_delay)
+                        backoff = self.RETRY_BASE * (2 ** (attempt - 1))
+                        log.warning(f'🔄 Rate limited ({resp.status_code}), retry {attempt}/{self.MAX_RETRIES} in {backoff}s')
+                        time.sleep(backoff)
                         continue
-                
-                return response
-                
+                return resp
             except requests.exceptions.RequestException as e:
                 if attempt < self.MAX_RETRIES:
-                    # EXACT same backoff calculation as Dart
-                    backoff_delay = self.RETRY_BACKOFF_BASE * (2 ** (attempt - 1))
-                    log.warning(f'🔄 Request failed, retrying in {backoff_delay}s: {e}')
-                    time.sleep(backoff_delay)
+                    backoff = self.RETRY_BASE * (2 ** (attempt - 1))
+                    log.warning(f'🔄 Request error ({e}), retry {attempt}/{self.MAX_RETRIES} in {backoff}s')
+                    time.sleep(backoff)
                 else:
                     log.error(f'❌ Max retries exceeded for {url}')
                     return None
-        
         return None
-    
-    def _parse_yahoo_response(self, data: Dict, symbol: str) -> List[StockData]:
-        """Parse Yahoo Finance response (exact same as Dart)"""
+
+    # -----------------------------------------------------------------------
+    # Response parsing  (UTC-safe — mirrors Dart implementation)
+    # -----------------------------------------------------------------------
+
+    def _parse_response(self, data: Dict, symbol: str) -> List[StockData]:
         result = data['chart']['result'][0]
         timestamps = result['timestamp']
         quotes = result['indicators']['quote'][0]
-        
-        opens = quotes.get('open', [])
-        highs = quotes.get('high', [])
-        lows = quotes.get('low', [])
-        closes = quotes.get('close', [])
+
+        opens   = quotes.get('open',   [])
+        highs   = quotes.get('high',   [])
+        lows    = quotes.get('low',    [])
+        closes  = quotes.get('close',  [])
         volumes = quotes.get('volume', [])
-        
-        stock_data_list = []
-        
+
+        out: List[StockData] = []
         for i in range(len(timestamps)):
-            # Skip days with null/invalid data (exact same as Dart)
-            if (opens[i] is None or highs[i] is None or 
-                lows[i] is None or closes[i] is None or volumes[i] is None or
-                opens[i] <= 0 or closes[i] <= 0):
+            if (opens[i] is None or highs[i] is None or
+                    lows[i] is None or closes[i] is None or volumes[i] is None or
+                    opens[i] <= 0 or closes[i] <= 0):
                 continue
-            
-            stock_data_list.append(StockData(
+            # Parse timestamp as UTC then build a naive calendar date
+            # (mirrors Dart: DateTime.fromMillisecondsSinceEpoch(..., isUtc: true))
+            raw_utc = datetime.utcfromtimestamp(timestamps[i])
+            calendar_date = datetime(raw_utc.year, raw_utc.month, raw_utc.day)
+
+            out.append(StockData(
                 symbol=symbol,
-                date=datetime.fromtimestamp(timestamps[i]),
+                date=calendar_date,
                 open=float(opens[i]),
                 high=float(highs[i]),
                 low=float(lows[i]),
                 close=float(closes[i]),
                 volume=int(volumes[i]),
             ))
-        
-        return stock_data_list
-    
-    def fetch_multiple_stocks_with_breaks(self, symbols: List[str], days: int = 50) -> Dict[str, List[StockData]]:
-        """Fetch multiple stocks with extended breaks (EXTRA CONSERVATIVE)"""
-        results = {}
-        
-        log.info(f'📊 Fetching data for {len(symbols)} stocks with conservative rate limiting...')
-        
-        # Shuffle symbols to appear more human-like (same as Dart)
-        shuffled_symbols = symbols.copy()
-        random.shuffle(shuffled_symbols)
-        
-        for i, symbol in enumerate(shuffled_symbols):
-            log.info(f'📊 Downloading {symbol} ({i+1}/{len(symbols)})')
-            
-            data = self.fetch_stock_data(symbol, days=days)
-            if data and len(data) > 0:
-                results[symbol] = data
-                log.info(f'✅ Downloaded {len(data)} days for {symbol}')
-            else:
-                log.warning(f'⚠️ No data received for {symbol}')
-            
-            # Add extra delay every 5 requests instead of 10 (MORE CONSERVATIVE)
-            if (i + 1) % 5 == 0:
-                extra_delay = 45 + random.randint(0, 15)  # 10-20 seconds
-                log.info(f'😴 Taking extended break ({extra_delay}s) after {i + 1} requests')
-                time.sleep(extra_delay)
-            
-            # Add small delay between every request (EXTRA SAFETY)
-            elif i < len(shuffled_symbols) - 1:  # Don't delay after last symbol
-                small_delay = 25 + random.randint(0, 8)  # 3-6 seconds
-                log.info(f'⏱️ Brief pause ({small_delay}s) before next symbol')
-                time.sleep(small_delay)
-        
-        log.info(f'✅ Successfully fetched data for {len(results)}/{len(symbols)} stocks')
 
+        log.info(f'🔍 Parsed {len(out)} valid records from {len(timestamps)} raw timestamps for {symbol}')
+        return out
+
+    # -----------------------------------------------------------------------
+    # Public API
+    # -----------------------------------------------------------------------
+
+    def fetch_stock_data(self, symbol: str, days: int = 50) -> Optional[List[StockData]]:
+        self._ensure_crumb()
+        self._rate_limit()
+
+        last_day = self._get_last_trading_day(symbol)
+        is_il = self._is_il_symbol(symbol)
+        # Extra buffer for IL stocks to compensate for possible missing days
+        buffer = (days // 10 + 2) if is_il else 0
+        start_dt = datetime.combine(last_day - timedelta(days=days + 15 + buffer), datetime.min.time())
+        end_dt   = datetime.combine(last_day, datetime.min.time()) + timedelta(hours=12)
+
+        params = {
+            'period1': str(int(start_dt.timestamp())),
+            'period2': str(int(end_dt.timestamp())),
+            'interval': '1d',
+            'includePrePost': 'false',
+            'events': 'div,split',
+            'crumb': self._crumb or self._random_crumb(),
+        }
+        url = f'{self.BASE_URL}/{symbol}'
+
+        log.info(f'📊 Fetching {symbol}  {start_dt.strftime("%d/%m/%Y")} → {end_dt.strftime("%d/%m/%Y")}')
+        resp = self._execute_with_retry(url, params)
+
+        if resp is None:
+            log.error(f'❌ Failed to fetch {symbol} after all retries')
+            return None
+        if resp.status_code != 200:
+            log.error(f'❌ HTTP {resp.status_code} for {symbol}')
+            if resp.status_code in (429, 503):
+                self._req_count += 10  # penalty
+            return None
+
+        data = resp.json()
+        if 'chart' not in data or not data['chart'].get('result'):
+            log.error(f'❌ Empty/error response for {symbol}')
+            return None
+
+        records = self._parse_response(data, symbol)
+        trading = [r for r in records if self._is_trading_day(r.date.date(), is_il)]
+        trading.sort(key=lambda x: x.date)
+        result = trading[-days:] if len(trading) > days else trading
+
+        log.info(f'✅ {symbol}: {len(result)} trading days fetched')
+        return result
+
+    def fetch_multiple_stocks_with_breaks(
+        self,
+        symbols: List[str],
+        days: int = 50,
+    ) -> Dict[str, List[StockData]]:
+        """Fetch a list of symbols with human-like batching and breaks."""
+        self._ensure_crumb()
+
+        results: Dict[str, List[StockData]] = {}
+        shuffled = symbols.copy()
+        random.shuffle(shuffled)
+
+        log.info(f'📊 Fetching {len(shuffled)} symbols (conservative rate-limiting + IP rotation)…')
+
+        for i, symbol in enumerate(shuffled):
+            log.info(f'⬇️  {symbol}  ({i + 1}/{len(shuffled)})')
+            data = self.fetch_stock_data(symbol, days=days)
+            if data:
+                results[symbol] = data
+            else:
+                log.warning(f'⚠️  No data for {symbol}')
+
+            # Extended break every BATCH_SIZE requests (mirrors Dart every-10 logic)
+            if (i + 1) % self.BATCH_SIZE == 0 and i + 1 < len(shuffled):
+                pause = self.BATCH_BREAK + random.uniform(0, 8)
+                log.info(f'😴 Batch break ({pause:.1f}s) after {i + 1} requests')
+                time.sleep(pause)
+
+        log.info(f'✅ Done: {len(results)}/{len(shuffled)} symbols fetched successfully')
         return results
