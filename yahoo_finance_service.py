@@ -325,9 +325,10 @@ class YahooFinanceService:
 
         last_day = self._get_last_trading_day(symbol)
         is_il = self._is_il_symbol(symbol)
-        # Extra buffer for IL stocks to compensate for possible missing days
-        buffer = (days // 10 + 2) if is_il else 0
-        start_dt = datetime.combine(last_day - timedelta(days=days + 15 + buffer), datetime.min.time())
+        # Same buffer formula as Polygon.io: int(days * 1.5) + 10 calendar days back
+        # ensures at least `days` trading days are returned even with holidays/gaps
+        calendar_days = int(days * 1.5) + 10
+        start_dt = datetime.combine(last_day - timedelta(days=calendar_days), datetime.min.time())
         end_dt   = datetime.combine(last_day, datetime.min.time()) + timedelta(hours=12)
 
         params = {
