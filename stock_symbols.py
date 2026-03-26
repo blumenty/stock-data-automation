@@ -98,7 +98,7 @@ SP500_STOCKS = [
 'VTR', 'VRSN', 'VRSK', 'VZ', 'VRTX', 'VTRS', 'VICI', 'V', 'VST', 'VMC',
 'WRB', 'GWW', 'WAB', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC',
 'WELL', 'WST', 'WDC', 'WY', 'WMB', 'EXE', 'WTW', 'WYNN', 'XEL', 'XYL',
-'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES',
+'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES', 'MRSH',
 #
 'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP', 'ZS', 'MRVL',
 'SIRI', 'FER', 'ALNY', 'INSM', 'TRI',
