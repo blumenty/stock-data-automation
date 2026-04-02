@@ -1,31 +1,13 @@
 {
-  "last_update": "2026-04-02T09:12:05.780586",
-  "start_time": "2026-04-02T06:13:20.999591",
-  "duration_seconds": 10724.780995,
-  "ta125_symbols": 0,
-  "sp500_symbols": 537,
-  "etf_symbols": 106,
-  "total_symbols": 643,
+  "last_update": "2026-04-02T18:11:12.577230",
+  "start_time": "2026-04-02T17:41:20.146609",
+  "duration_seconds": 1792.430621,
+  "ta_symbols": 267,
+  "etf_il_symbols": 17,
+  "total_symbols": 284,
   "status": "success",
   "services": {
-    "ta125_service": "Yahoo Finance",
-    "sp500_service": "Polygon.io",
-    "etf_service": "Polygon.io",
-    "polygon_health": {
-      "isHealthy": true,
-      "responseTime": 211.04999999999998,
-      "status": "Connected",
-      "apiLimitRemaining": null,
-      "testSymbol": "AAPL"
-    },
-    "yahoo_health": {
-      "status": "Available",
-      "service": "Yahoo Finance"
-    }
-  },
-  "api_info": {
-    "polygon_api_key_present": true,
-    "polygon_rate_limit": "5 requests/minute (free tier) with 12s minimum delays",
-    "yahoo_rate_limit": "15 requests/minute with 25-30s delays"
+    "ta_service": "Yahoo Finance",
+    "etf_il_service": "Yahoo Finance"
   }
 }
