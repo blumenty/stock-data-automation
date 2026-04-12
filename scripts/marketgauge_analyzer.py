@@ -333,40 +333,74 @@ def extract_pnf_state_from_analysis(analysis_text):
     return None, None, None, None
 
 
-def fetch_pnf_chart_image():
-    """Fetch the $SPX Point & Figure chart from StockCharts and return (base64_data, mime_type).
-    Returns (None, None) if the response is not a recognised image type."""
+def fetch_pnf_chart_image(output_dir='data'):
+    """Fetch the $SPX Point & Figure chart from StockCharts.
+    Saves the raw image to data/pnf-chart-latest.gif for debugging.
+    Returns (base64_data, mime_type) or (None, None) if not a recognised image."""
     print(f"📊 Fetching P&F chart from StockCharts...")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Use session with full browser-like headers to avoid bot detection
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    })
+
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://stockcharts.com/',
-            'Accept': 'image/gif, image/png, image/jpeg, image/*',
-        }
-        response = requests.get(PNF_CHART_URL, headers=headers, timeout=30)
+        # Step 1: visit the StockCharts homepage first to get a session cookie
+        print("   🌐 Establishing StockCharts session...")
+        session.get('https://stockcharts.com/', timeout=20)
+        time.sleep(2)
+
+        # Step 2: fetch the actual chart image
+        print(f"   📥 Requesting chart: {PNF_CHART_URL}")
+        session.headers.update({
+            'Referer': 'https://stockcharts.com/freecharts/pnf.php',
+            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        })
+        response = session.get(PNF_CHART_URL, timeout=30)
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type', '').lower()
-        print(f"   Content-Type: {content_type} | Size: {len(response.content)} bytes")
+        size = len(response.content)
+        print(f"   Content-Type: {content_type} | Size: {size} bytes")
 
-        if 'gif' in content_type:
+        # Detect image type
+        if 'gif' in content_type or response.content[:6] in (b'GIF87a', b'GIF89a'):
             mime_type = 'image/gif'
-        elif 'png' in content_type:
+        elif 'png' in content_type or response.content[:8] == b'\x89PNG\r\n\x1a\n':
             mime_type = 'image/png'
-        elif 'jpeg' in content_type or 'jpg' in content_type:
+        elif 'jpeg' in content_type or 'jpg' in content_type or response.content[:2] == b'\xff\xd8':
             mime_type = 'image/jpeg'
         else:
-            # StockCharts blocked the request and returned HTML/text — do not send garbage to Gemini
-            print(f"❌ P&F fetch did not return an image (Content-Type: {content_type}). Skipping chart.")
-            print(f"   First 200 bytes: {response.content[:200]}")
+            print(f"❌ P&F fetch returned non-image content (Content-Type: {content_type})")
+            # Save raw response so we can inspect what StockCharts returned
+            debug_path = os.path.join(output_dir, 'pnf-fetch-debug.txt')
+            with open(debug_path, 'wb') as f:
+                f.write(response.content[:2000])
+            print(f"   Debug dump saved: {debug_path}")
+            print(f"   First 300 bytes: {response.content[:300]}")
             return None, None
 
+        # Save a copy of the image for inspection / debugging
+        img_ext = mime_type.split('/')[1]
+        img_path = os.path.join(output_dir, f'pnf-chart-latest.{img_ext}')
+        with open(img_path, 'wb') as f:
+            f.write(response.content)
+        print(f"✅ P&F chart saved to {img_path} ({size} bytes, {mime_type})")
+
         image_data = base64.b64encode(response.content).decode('utf-8')
-        print(f"✅ P&F chart fetched successfully ({mime_type})")
         return image_data, mime_type
 
     except Exception as e:
         print(f"❌ Error fetching P&F chart: {e}")
+        import traceback
+        traceback.print_exc()
         return None, None
 
 
@@ -935,13 +969,27 @@ Be direct and specific. Use the exact numbers from the data table. Format for HT
             image_mime_type=pnf_mime_type or 'image/gif'
         )
 
-        # Persist today's P&F state so tomorrow's run can compare
+        # Persist today's P&F state so tomorrow's run can compare.
+        # Always write the file — even if image was unavailable — so the next run
+        # knows the script ran and can report "no chart data yesterday".
         if ai_analysis:
             col_dir, col_boxes, signal, corroboration = extract_pnf_state_from_analysis(ai_analysis)
             if col_dir and col_boxes:
                 save_pnf_state(col_dir, col_boxes, signal or 'none', bool(corroboration))
             else:
-                print("⚠️  Could not extract P&F state from analysis — state not saved.")
+                print("⚠️  Could not extract P&F state JSON from analysis.")
+                if pnf_image_data:
+                    print("   Chart was sent but Gemini did not output the JSON block — check prompt.")
+                # Still write a stub so tomorrow knows the date we last ran
+                save_pnf_state(
+                    column_direction='unknown',
+                    column_boxes=0,
+                    signal='none',
+                    corroboration=False
+                )
+        else:
+            # AI call failed entirely — write a dated stub so the file exists
+            save_pnf_state('unknown', 0, 'none', False)
     
     # Step 5: Generate HTML report
     html_success = generate_html_report(data, ai_analysis)
