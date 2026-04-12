@@ -276,6 +276,63 @@ GEMINI_VISION_MODEL = "gemini-1.5-flash"
 
 PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
 
+PNF_STATE_FILE = os.path.join('data', 'pnf-state.json')
+
+def load_pnf_yesterday_state():
+    """Load yesterday's P&F column state from disk. Returns dict or None."""
+    if not os.path.exists(PNF_STATE_FILE):
+        print("ℹ️  No previous P&F state found (first run).")
+        return None
+    try:
+        with open(PNF_STATE_FILE, 'r') as f:
+            state = json.load(f)
+        print(f"📂 Loaded P&F state from {state.get('date', 'unknown date')}: "
+              f"column={state.get('column_direction','?')}, boxes={state.get('column_boxes','?')}")
+        return state
+    except Exception as e:
+        print(f"⚠️  Could not load P&F state: {e}")
+        return None
+
+def save_pnf_state(column_direction, column_boxes, signal, corroboration):
+    """Persist today's P&F column reading to disk for tomorrow's comparison."""
+    os.makedirs('data', exist_ok=True)
+    state = {
+        'date': datetime.now().strftime('%Y-%m-%d'),
+        'column_direction': column_direction,   # 'X' or 'O'
+        'column_boxes': column_boxes,            # integer count
+        'signal': signal,                        # 'uptrend' | 'downtrend' | 'none'
+        'corroboration': corroboration,          # True | False
+    }
+    try:
+        with open(PNF_STATE_FILE, 'w') as f:
+            json.dump(state, f, indent=2)
+        print(f"💾 P&F state saved: {state}")
+    except Exception as e:
+        print(f"⚠️  Could not save P&F state: {e}")
+
+
+def extract_pnf_state_from_analysis(analysis_text):
+    """
+    Ask Gemini for a structured P&F state JSON so we can persist it.
+    Returns (column_direction, column_boxes, signal, corroboration) or None tuple on failure.
+    """
+    import re
+    # Look for a JSON block Gemini may have embedded
+    match = re.search(r'\{[^{}]*"column_direction"[^{}]*\}', analysis_text, re.DOTALL)
+    if match:
+        try:
+            state = json.loads(match.group())
+            return (
+                state.get('column_direction', 'unknown'),
+                int(state.get('column_boxes', 0)),
+                state.get('signal', 'none'),
+                bool(state.get('corroboration', False)),
+            )
+        except Exception:
+            pass
+    return None, None, None, None
+
+
 def fetch_pnf_chart_image():
     """Fetch the $SPX Point & Figure chart from StockCharts and return (base64_data, mime_type).
     Returns (None, None) if the response is not a recognised image type."""
@@ -762,41 +819,63 @@ def main():
     ai_analysis = None
     
     if gemini_api_key:
-        # Fetch P&F chart image for enhanced analysis
+        # Fetch P&F chart image and yesterday's state for comparison
         pnf_image_data, pnf_mime_type = fetch_pnf_chart_image()
+        yesterday_pnf = load_pnf_yesterday_state()
 
-        # Create prompt for Gemini with CORRECT field mapping
-        pnf_section = ""
-        pnf_image_note = ""
+        # Build yesterday context string for the prompt
+        if yesterday_pnf:
+            yest_dir   = yesterday_pnf.get('column_direction', '?')
+            yest_boxes = yesterday_pnf.get('column_boxes', '?')
+            yest_date  = yesterday_pnf.get('date', 'previous session')
+            yesterday_context = (
+                f"Yesterday ({yest_date}) the active P&F column was "
+                f"**{yest_dir}** with **{yest_boxes} boxes**."
+            )
+        else:
+            yesterday_context = "No previous P&F state is available (first run)."
+
+        # Build the P&F section of the prompt
+        today_date = datetime.now().strftime('%Y-%m-%d')
         if pnf_image_data:
-            pnf_image_note = "\nThe attached image is the current $SPX Point & Figure chart from StockCharts."
-            pnf_section = """
+            pnf_image_note = "\nThe attached image is today's $SPX Point & Figure (P&F) chart from StockCharts."
+            pnf_section = f"""
 ### **S&P 500 Point & Figure (P&F) Chart Analysis**
-The attached P&F chart shows the $SPX using Point & Figure methodology (daily, 3-box reversal).
+The attached chart is the $SPX P&F chart (daily, 3-box reversal) for **{today_date}**.
 
-P&F interpretation rules used in this analysis:
-- **DOWNTREND signal**: 3 consecutive O's in a new reversal column (bearish)
-- **UPTREND signal**: 3 consecutive X's in a new reversal column (bullish)
-- **Corroboration (stronger signal)**: 2 additional O's (bearish confirmation) or 2 additional X's (bullish confirmation) beyond the initial 3-box reversal
+**Previous session context:** {yesterday_context}
 
-Based on the P&F chart image, please analyze:
-1. What is the direction of the current active column (X = rising demand / O = falling supply)?
-2. How many boxes are in the current active column?
-3. Has a direction change signal been triggered (3 O's = downtrend / 3 X's = uptrend)?
-4. Is there corroboration (2 additional boxes in the same direction beyond the reversal)?
-5. What is the overall P&F trend bias — Bullish, Bearish, or Neutral?
-6. Are there any notable P&F support/resistance levels or patterns visible?
+**P&F signal rules:**
+- A direction CHANGE is signalled when a NEW column contains **3 or more boxes** (3× X = uptrend signal; 3× O = downtrend signal).
+- **Corroboration** occurs when that same column grows to **4 or more boxes** (yesterday showed 3, today shows 4+), confirming the signal.
+
+**Your task — answer each point precisely:**
+1. What is the direction of today's active column? (X = rising demand / O = falling supply)
+2. How many boxes does today's active column contain?
+3. Comparing to yesterday ({yest_boxes if yesterday_pnf else 'unknown'} boxes in a {yest_dir if yesterday_pnf else '?'} column):
+   - Is this the same column continuing, or has a new column started?
+   - If a new column: has the 3-box direction-change signal triggered? (yes/no)
+   - If the signal already triggered yesterday: does today add a 4th+ box, providing **corroboration**? (yes/no)
+4. Overall P&F bias: **Bullish**, **Bearish**, or **Neutral** — and why.
+5. Any notable P&F support/resistance levels visible on the chart.
+
+At the end of your P&F section, output a single JSON block (so the state can be saved for tomorrow) in exactly this format:
+```json
+{{"column_direction": "X or O", "column_boxes": <integer>, "signal": "uptrend or downtrend or none", "corroboration": true or false}}
+```
 """
         else:
-            pnf_section = """
+            pnf_image_note = ""
+            pnf_section = f"""
 ### **S&P 500 Point & Figure (P&F) Chart Analysis**
-Note: P&F chart image could not be fetched. Based on current market data and general P&F methodology:
-- P&F direction change signals: 3 consecutive O's (downtrend) or 3 consecutive X's (uptrend)
-- Corroboration: 2 additional boxes in the same direction following the reversal signal
-- Provide P&F outlook consistent with the SPY/QQQ technical picture above.
+Note: The P&F chart image could not be fetched today.
+
+**Previous session context:** {yesterday_context}
+
+Based on the previous session data and the MarketGauge indicators above, describe the likely P&F direction consistent with the SPY/QQQ technical picture. State clearly that a chart image was unavailable.
 """
 
-        prompt = f"""You are analyzing market data from MarketGauge for {datetime.now().strftime('%Y-%m-%d')}.{pnf_image_note}
+        prompt = f"""You are analyzing market data from MarketGauge for {today_date}.{pnf_image_note}
 
 Here is the current market data:
 
@@ -822,7 +901,7 @@ IMPORTANT: Use ONLY the actual column values provided above. Each row represents
 Please provide a comprehensive market analysis report following this structure:
 
 ## **Market Report - S&P 500 & Nasdaq 100**
-**Source: MarketGauge Big View | Date: {datetime.now().strftime('%Y-%m-%d')}**
+**Source: MarketGauge Big View | Date: {today_date}**
 
 ### **S&P 500 (SPY)**
 Analyze using ONLY the SPY row data:
@@ -845,7 +924,7 @@ Same structure using ONLY QQQ row data
 - Short-term outlook based on data
 - Medium-term outlook based on data
 - Long-term outlook based on data
-- P&F Chart Signal: [current column direction, whether a 3-box reversal signal has triggered, and whether corroboration is present — bullish/bearish/neutral]
+- **P&F Chart Signal:** State the current column direction and box count, whether a 3-box direction-change signal has triggered, and whether corroboration (4+ boxes) is present — conclude Bullish / Bearish / Neutral.
 - Key alerts or observations
 
 Be direct and specific. Use the exact numbers from the data table. Format for HTML display."""
@@ -855,6 +934,14 @@ Be direct and specific. Use the exact numbers from the data table. Format for HT
             image_data=pnf_image_data,
             image_mime_type=pnf_mime_type or 'image/gif'
         )
+
+        # Persist today's P&F state so tomorrow's run can compare
+        if ai_analysis:
+            col_dir, col_boxes, signal, corroboration = extract_pnf_state_from_analysis(ai_analysis)
+            if col_dir and col_boxes:
+                save_pnf_state(col_dir, col_boxes, signal or 'none', bool(corroboration))
+            else:
+                print("⚠️  Could not extract P&F state from analysis — state not saved.")
     
     # Step 5: Generate HTML report
     html_success = generate_html_report(data, ai_analysis)
