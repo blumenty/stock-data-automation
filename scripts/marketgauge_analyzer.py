@@ -388,17 +388,20 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     """
     import re
     print("🔍 Reading P&F chart column via Gemini vision...")
+    print(f"   Model: {GEMINI_VISION_MODEL} | Image size: {len(image_data)} chars b64 | MIME: {image_mime_type}")
 
     model = GEMINI_VISION_MODEL
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "This is a Point & Figure (P&F) chart. "
-        "Look ONLY at the rightmost (most recent) column. "
-        "Count how many boxes (X or O) are filled in that column. "
-        "Reply with ONLY a JSON object — no explanation, no markdown — in exactly this format:\n"
-        '{"direction": "X", "count": 5}\n'
-        "direction must be exactly \"X\" or \"O\". count must be an integer."
+        "This image is a Point & Figure (P&F) stock chart showing columns of X's and O's. "
+        "X columns go up (demand), O columns go down (supply). "
+        "Find the rightmost column — it is the most recent one, at the far right edge of the chart. "
+        "Count exactly how many X's or O's are filled/marked in that rightmost column. "
+        "Reply with ONLY a raw JSON object, nothing else, no markdown, no explanation:\n"
+        '{"direction": "X", "count": 7}\n'
+        'Use "X" if the rightmost column contains X marks, "O" if it contains O marks. '
+        "count is an integer >= 1."
     )
 
     payload = {
@@ -406,36 +409,83 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             {"text": prompt},
             {"inline_data": {"mime_type": image_mime_type, "data": image_data}}
         ]}],
-        "generationConfig": {"temperature": 0, "maxOutputTokens": 64}
+        "generationConfig": {"temperature": 0, "maxOutputTokens": 128}
     }
 
     try:
         response = requests.post(url, headers={"Content-Type": "application/json"},
-                                 json=payload, timeout=30)
+                                 json=payload, timeout=45)
+
+        print(f"   HTTP status: {response.status_code}")
+
         if not response.ok:
-            print(f"❌ Vision read failed (HTTP {response.status_code}): {response.text[:300]}")
+            print(f"❌ Vision read failed (HTTP {response.status_code})")
+            print(f"   Full error response: {response.text[:600]}")
             return None, None
 
         result = response.json()
-        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-        print(f"   Gemini raw response: {text}")
 
-        # Strip markdown fences if present
-        text = re.sub(r"```[a-z]*", "", text).strip().strip("`").strip()
+        # Log finish reason if available (catches SAFETY, RECITATION, etc.)
+        try:
+            finish_reason = result["candidates"][0].get("finishReason", "unknown")
+            print(f"   Finish reason: {finish_reason}")
+            if finish_reason not in ("STOP", "MAX_TOKENS"):
+                print(f"   ⚠️ Unexpected finish reason — full response: {json.dumps(result, indent=2)[:600]}")
+                return None, None
+        except (KeyError, IndexError):
+            pass
 
-        parsed = json.loads(text)
-        direction = parsed.get("direction", "").upper()
-        count = int(parsed.get("count", 0))
+        try:
+            raw_text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except (KeyError, IndexError) as e:
+            print(f"❌ Could not extract text from response: {e}")
+            print(f"   Full response: {json.dumps(result, indent=2)[:600]}")
+            return None, None
 
-        if direction not in ("X", "O") or count <= 0:
-            print(f"❌ Unexpected values from vision read: direction={direction}, count={count}")
+        print(f"   Gemini raw response: {repr(raw_text)}")
+
+        # Strip markdown code fences (```json ... ``` or ``` ... ```)
+        clean = re.sub(r"```[a-zA-Z]*", "", raw_text).strip().strip("`").strip()
+
+        # Extract just the JSON object in case there's surrounding text
+        json_match = re.search(r'\{[^{}]+\}', clean)
+        if json_match:
+            clean = json_match.group()
+
+        try:
+            parsed = json.loads(clean)
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parse error: {e} | cleaned text: {repr(clean)}")
+            # Last resort: try to extract values with regex
+            dir_match = re.search(r'"direction"\s*:\s*"([XO])"', raw_text, re.IGNORECASE)
+            cnt_match = re.search(r'"count"\s*:\s*(\d+)', raw_text)
+            if dir_match and cnt_match:
+                direction = dir_match.group(1).upper()
+                count = int(cnt_match.group(1))
+                print(f"   Recovered via regex: direction={direction}, count={count}")
+                return direction, count
+            return None, None
+
+        direction = str(parsed.get("direction", "")).upper().strip()
+        try:
+            count = int(parsed.get("count", 0))
+        except (ValueError, TypeError):
+            count = 0
+
+        if direction not in ("X", "O"):
+            print(f"❌ direction value '{direction}' is not X or O")
+            return None, None
+        if count <= 0:
+            print(f"❌ count value {count} is not a positive integer")
             return None, None
 
         print(f"✅ P&F column read: direction={direction}, count={count}")
         return direction, count
 
     except Exception as e:
-        print(f"❌ Error reading P&F column: {e}")
+        print(f"❌ Exception in read_pnf_column_with_gemini: {e}")
+        import traceback
+        traceback.print_exc()
         return None, None
 
 
