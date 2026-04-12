@@ -29,14 +29,17 @@ jobs:
         
     - name: Install Chrome and ChromeDriver
       run: |
-        # Install Chrome
+        # Remove any system-installed chromedriver that may conflict with Selenium's auto-manager
+        sudo rm -f /usr/bin/chromedriver /usr/local/bin/chromedriver
+
+        # Install latest stable Chrome
         wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
         sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
-        
-        # ChromeDriver is automatically managed by Selenium 4.6+
-        echo "✅ Chrome installed"
+
+        # Selenium 4.6+ auto-downloads the matching ChromeDriver — no manual install needed
+        echo "✅ Chrome installed (system chromedriver removed — Selenium will manage its own)"
         google-chrome --version
         
     - name: Run Market Analyzer
