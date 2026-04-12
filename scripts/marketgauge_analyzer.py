@@ -306,18 +306,22 @@ def fetch_pnf_chart_image():
 
 
 def call_gemini_api(prompt, api_key, image_data=None, image_mime_type='image/gif', retries=3):
-    """Call Google Gemini API to generate analysis, optionally with an image"""
-    print("🤖 Calling Google Gemini API for analysis...")
+    """Call Google Gemini API to generate analysis, optionally with an image.
+    If a multimodal request is rejected (model does not support vision), automatically
+    falls back to a text-only request so the analysis is never silently lost."""
+    is_multimodal = image_data is not None
+    print(f"🤖 Calling Google Gemini API for analysis{'  (multimodal + P&F chart)' if is_multimodal else ''}...")
 
-    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    # Use v1beta for broader model support (covers newer preview models)
+    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
 
     headers = {
         "Content-Type": "application/json"
     }
 
-    parts = [{"text": prompt}]
+    request_parts = [{"text": prompt}]
     if image_data:
-        parts.append({
+        request_parts.append({
             "inline_data": {
                 "mime_type": image_mime_type,
                 "data": image_data
@@ -327,7 +331,7 @@ def call_gemini_api(prompt, api_key, image_data=None, image_mime_type='image/gif
     payload = {
         "contents": [
             {
-                "parts": parts
+                "parts": request_parts
             }
         ],
         "generationConfig": {
@@ -348,16 +352,24 @@ def call_gemini_api(prompt, api_key, image_data=None, image_mime_type='image/gif
                 time.sleep(5 * attempt)
                 continue
 
+            # If a multimodal request was rejected (model may not support vision),
+            # fall back immediately to a text-only request rather than failing entirely.
+            if not response.ok and is_multimodal:
+                print(f"⚠️ Multimodal request rejected (HTTP {response.status_code}). "
+                      "Falling back to text-only request...")
+                print(f"   Response: {response.text[:300]}")
+                return call_gemini_api(prompt, api_key, image_data=None, retries=retries)
+
             # Raise for other HTTP errors
             response.raise_for_status()
 
             # Parse and extract text
             result = response.json()
             if "candidates" in result and result["candidates"]:
-                parts = result["candidates"][0]["content"]["parts"]
-                if parts and "text" in parts[0]:
+                response_parts = result["candidates"][0]["content"]["parts"]
+                if response_parts and "text" in response_parts[0]:
                     print("✅ Gemini API analysis received")
-                    return parts[0]["text"]
+                    return response_parts[0]["text"]
 
             print("❌ Unexpected API response format:")
             print(json.dumps(result, indent=2))
