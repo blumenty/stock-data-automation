@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+import base64
 
 # Try to import selenium, but provide fallback
 try:
@@ -271,8 +272,41 @@ import requests
 
 GEMINI_MODEL = "gemini-2.5-flash-lite"
 
-def call_gemini_api(prompt, api_key, retries=3):
-    """Call Google Gemini API to generate analysis"""
+PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
+
+def fetch_pnf_chart_image():
+    """Fetch the $SPX Point & Figure chart from StockCharts and return (base64_data, mime_type)"""
+    print(f"📊 Fetching P&F chart from StockCharts...")
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://stockcharts.com/'
+        }
+        response = requests.get(PNF_CHART_URL, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        content_type = response.headers.get('Content-Type', '')
+        if 'gif' in content_type:
+            mime_type = 'image/gif'
+        elif 'png' in content_type:
+            mime_type = 'image/png'
+        elif 'jpeg' in content_type or 'jpg' in content_type:
+            mime_type = 'image/jpeg'
+        else:
+            # StockCharts typically returns GIF
+            mime_type = 'image/gif'
+
+        image_data = base64.b64encode(response.content).decode('utf-8')
+        print(f"✅ P&F chart fetched ({len(response.content)} bytes, {mime_type})")
+        return image_data, mime_type
+
+    except Exception as e:
+        print(f"❌ Error fetching P&F chart: {e}")
+        return None, None
+
+
+def call_gemini_api(prompt, api_key, image_data=None, image_mime_type='image/gif', retries=3):
+    """Call Google Gemini API to generate analysis, optionally with an image"""
     print("🤖 Calling Google Gemini API for analysis...")
 
     GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent?key={api_key}"
@@ -281,10 +315,19 @@ def call_gemini_api(prompt, api_key, retries=3):
         "Content-Type": "application/json"
     }
 
+    parts = [{"text": prompt}]
+    if image_data:
+        parts.append({
+            "inline_data": {
+                "mime_type": image_mime_type,
+                "data": image_data
+            }
+        })
+
     payload = {
         "contents": [
             {
-                "parts": [{"text": prompt}]
+                "parts": parts
             }
         ],
         "generationConfig": {
@@ -472,7 +515,7 @@ def generate_html_report(data, ai_analysis, output_dir='data'):
         .badge-bull {{
             background: #10b981;
             color: white;
-        }}
+        }}a
         
         .badge-bear {{
             background: #ef4444;
@@ -696,8 +739,41 @@ def main():
     ai_analysis = None
     
     if gemini_api_key:
+        # Fetch P&F chart image for enhanced analysis
+        pnf_image_data, pnf_mime_type = fetch_pnf_chart_image()
+
         # Create prompt for Gemini with CORRECT field mapping
-        prompt = f"""You are analyzing market data from MarketGauge for {datetime.now().strftime('%Y-%m-%d')}.
+        pnf_section = ""
+        pnf_image_note = ""
+        if pnf_image_data:
+            pnf_image_note = "\nThe attached image is the current $SPX Point & Figure chart from StockCharts."
+            pnf_section = """
+### **S&P 500 Point & Figure (P&F) Chart Analysis**
+The attached P&F chart shows the $SPX using Point & Figure methodology (daily, 3-box reversal).
+
+P&F interpretation rules used in this analysis:
+- **DOWNTREND signal**: 3 consecutive O's in a new reversal column (bearish)
+- **UPTREND signal**: 3 consecutive X's in a new reversal column (bullish)
+- **Corroboration (stronger signal)**: 2 additional O's (bearish confirmation) or 2 additional X's (bullish confirmation) beyond the initial 3-box reversal
+
+Based on the P&F chart image, please analyze:
+1. What is the direction of the current active column (X = rising demand / O = falling supply)?
+2. How many boxes are in the current active column?
+3. Has a direction change signal been triggered (3 O's = downtrend / 3 X's = uptrend)?
+4. Is there corroboration (2 additional boxes in the same direction beyond the reversal)?
+5. What is the overall P&F trend bias — Bullish, Bearish, or Neutral?
+6. Are there any notable P&F support/resistance levels or patterns visible?
+"""
+        else:
+            pnf_section = """
+### **S&P 500 Point & Figure (P&F) Chart Analysis**
+Note: P&F chart image could not be fetched. Based on current market data and general P&F methodology:
+- P&F direction change signals: 3 consecutive O's (downtrend) or 3 consecutive X's (uptrend)
+- Corroboration: 2 additional boxes in the same direction following the reversal signal
+- Provide P&F outlook consistent with the SPY/QQQ technical picture above.
+"""
+
+        prompt = f"""You are analyzing market data from MarketGauge for {datetime.now().strftime('%Y-%m-%d')}.{pnf_image_note}
 
 Here is the current market data:
 
@@ -728,12 +804,14 @@ Please provide a comprehensive market analysis report following this structure:
 ### **S&P 500 (SPY)**
 Analyze using ONLY the SPY row data:
 - Short-term (5-day): [actual 5Day value] - Status and trend
-- Medium-term (3-month): [actual 3Month value] - Status and trend  
+- Medium-term (3-month): [actual 3Month value] - Status and trend
 - Long-term (6-month): [actual 6Month value] - Status and trend
 - Technical indicators: Phase=[Phase], TSI=[TSI], RM50=[RM50], RM10=[RM10]
 
 ### **Nasdaq 100 (QQQ)**
 Same structure using ONLY QQQ row data
+
+{pnf_section}
 
 ### **Critical Comparison**
 - Compare 5-day, 3-month, 6-month performances
@@ -744,11 +822,16 @@ Same structure using ONLY QQQ row data
 - Short-term outlook based on data
 - Medium-term outlook based on data
 - Long-term outlook based on data
+- P&F Chart Signal: [current column direction, whether a 3-box reversal signal has triggered, and whether corroboration is present — bullish/bearish/neutral]
 - Key alerts or observations
 
 Be direct and specific. Use the exact numbers from the data table. Format for HTML display."""
 
-        ai_analysis = call_gemini_api(prompt, gemini_api_key)
+        ai_analysis = call_gemini_api(
+            prompt, gemini_api_key,
+            image_data=pnf_image_data,
+            image_mime_type=pnf_mime_type or 'image/gif'
+        )
     
     # Step 5: Generate HTML report
     html_success = generate_html_report(data, ai_analysis)
