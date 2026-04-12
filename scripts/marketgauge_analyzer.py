@@ -271,21 +271,27 @@ import json
 import requests
 
 GEMINI_MODEL = "gemini-2.5-flash-lite"
+# gemini-2.5-flash-lite is text-only; use a vision-capable model when sending images
+GEMINI_VISION_MODEL = "gemini-1.5-flash"
 
 PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
 
 def fetch_pnf_chart_image():
-    """Fetch the $SPX Point & Figure chart from StockCharts and return (base64_data, mime_type)"""
+    """Fetch the $SPX Point & Figure chart from StockCharts and return (base64_data, mime_type).
+    Returns (None, None) if the response is not a recognised image type."""
     print(f"📊 Fetching P&F chart from StockCharts...")
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://stockcharts.com/'
+            'Referer': 'https://stockcharts.com/',
+            'Accept': 'image/gif, image/png, image/jpeg, image/*',
         }
         response = requests.get(PNF_CHART_URL, headers=headers, timeout=30)
         response.raise_for_status()
 
-        content_type = response.headers.get('Content-Type', '')
+        content_type = response.headers.get('Content-Type', '').lower()
+        print(f"   Content-Type: {content_type} | Size: {len(response.content)} bytes")
+
         if 'gif' in content_type:
             mime_type = 'image/gif'
         elif 'png' in content_type:
@@ -293,11 +299,13 @@ def fetch_pnf_chart_image():
         elif 'jpeg' in content_type or 'jpg' in content_type:
             mime_type = 'image/jpeg'
         else:
-            # StockCharts typically returns GIF
-            mime_type = 'image/gif'
+            # StockCharts blocked the request and returned HTML/text — do not send garbage to Gemini
+            print(f"❌ P&F fetch did not return an image (Content-Type: {content_type}). Skipping chart.")
+            print(f"   First 200 bytes: {response.content[:200]}")
+            return None, None
 
         image_data = base64.b64encode(response.content).decode('utf-8')
-        print(f"✅ P&F chart fetched ({len(response.content)} bytes, {mime_type})")
+        print(f"✅ P&F chart fetched successfully ({mime_type})")
         return image_data, mime_type
 
     except Exception as e:
@@ -310,10 +318,13 @@ def call_gemini_api(prompt, api_key, image_data=None, image_mime_type='image/gif
     If a multimodal request is rejected (model does not support vision), automatically
     falls back to a text-only request so the analysis is never silently lost."""
     is_multimodal = image_data is not None
+    # Use vision-capable model when sending an image; lite model for text-only
+    model = GEMINI_VISION_MODEL if is_multimodal else GEMINI_MODEL
     print(f"🤖 Calling Google Gemini API for analysis{'  (multimodal + P&F chart)' if is_multimodal else ''}...")
+    print(f"   Model: {model}")
 
     # Use v1beta for broader model support (covers newer preview models)
-    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
+    GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     headers = {
         "Content-Type": "application/json"
