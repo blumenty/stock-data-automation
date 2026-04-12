@@ -440,73 +440,99 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
 
 
 def fetch_pnf_chart_image(output_dir='data'):
-    """Fetch the $SPX Point & Figure chart from StockCharts.
-    Saves the raw image to data/pnf-chart-latest.gif for debugging.
-    Returns (base64_data, mime_type) or (None, None) if not a recognised image."""
+    """Fetch the $SPX P&F chart as a PNG screenshot using Selenium (real browser),
+    falling back to a plain requests download.
+    Saves data/pnf-chart-latest.png for debugging.
+    Returns (base64_data, 'image/png') or (None, None)."""
     print(f"📊 Fetching P&F chart from StockCharts...")
     os.makedirs(output_dir, exist_ok=True)
+    img_path = os.path.join(output_dir, 'pnf-chart-latest.png')
 
-    # Use session with full browser-like headers to avoid bot detection
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-    })
+    # ── Primary: Selenium screenshot (bypasses bot detection) ──────────────
+    if SELENIUM_AVAILABLE:
+        driver = None
+        try:
+            print("   🌐 Using Selenium to render P&F chart...")
+            chrome_options = Options()
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1400,900')
+            chrome_options.add_argument(
+                'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+            )
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(PNF_CHART_URL)
+            print("   ⏳ Waiting for chart to render...")
+            time.sleep(8)
 
+            # Try to find the chart <img> element and screenshot just that area
+            try:
+                img_el = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, 'img'))
+                )
+                png_bytes = img_el.screenshot_as_png
+                print("   📸 Screenshotted <img> element")
+            except Exception:
+                # Fallback: screenshot the full page
+                png_bytes = driver.get_screenshot_as_png()
+                print("   📸 Screenshotted full page (img element not found)")
+
+            with open(img_path, 'wb') as f:
+                f.write(png_bytes)
+            size = len(png_bytes)
+            print(f"✅ P&F chart saved to {img_path} ({size} bytes, image/png)")
+            return base64.b64encode(png_bytes).decode('utf-8'), 'image/png'
+
+        except Exception as e:
+            print(f"⚠️  Selenium P&F fetch failed: {e}")
+        finally:
+            if driver:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+
+    # ── Fallback: plain requests (may be blocked) ───────────────────────────
+    print("   📡 Trying plain requests fallback for P&F chart...")
     try:
-        # Step 1: visit the StockCharts homepage first to get a session cookie
-        print("   🌐 Establishing StockCharts session...")
-        session.get('https://stockcharts.com/', timeout=20)
-        time.sleep(2)
-
-        # Step 2: fetch the actual chart image
-        print(f"   📥 Requesting chart: {PNF_CHART_URL}")
-        session.headers.update({
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
             'Referer': 'https://stockcharts.com/freecharts/pnf.php',
-            'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        })
-        response = session.get(PNF_CHART_URL, timeout=30)
+            'Accept': 'image/*,*/*;q=0.8',
+        }
+        response = requests.get(PNF_CHART_URL, headers=headers, timeout=30)
         response.raise_for_status()
 
         content_type = response.headers.get('Content-Type', '').lower()
-        size = len(response.content)
-        print(f"   Content-Type: {content_type} | Size: {size} bytes")
+        raw = response.content
+        print(f"   Content-Type: {content_type} | Size: {len(raw)} bytes")
 
-        # Detect image type
-        if 'gif' in content_type or response.content[:6] in (b'GIF87a', b'GIF89a'):
-            mime_type = 'image/gif'
-        elif 'png' in content_type or response.content[:8] == b'\x89PNG\r\n\x1a\n':
-            mime_type = 'image/png'
-        elif 'jpeg' in content_type or 'jpg' in content_type or response.content[:2] == b'\xff\xd8':
-            mime_type = 'image/jpeg'
+        if 'gif' in content_type or raw[:6] in (b'GIF87a', b'GIF89a'):
+            mime_type, ext = 'image/gif', 'gif'
+        elif 'png' in content_type or raw[:8] == b'\x89PNG\r\n\x1a\n':
+            mime_type, ext = 'image/png', 'png'
+        elif 'jpeg' in content_type or raw[:2] == b'\xff\xd8':
+            mime_type, ext = 'image/jpeg', 'jpg'
         else:
-            print(f"❌ P&F fetch returned non-image content (Content-Type: {content_type})")
-            # Save raw response so we can inspect what StockCharts returned
+            print(f"❌ Requests fallback also returned non-image content.")
             debug_path = os.path.join(output_dir, 'pnf-fetch-debug.txt')
             with open(debug_path, 'wb') as f:
-                f.write(response.content[:2000])
-            print(f"   Debug dump saved: {debug_path}")
-            print(f"   First 300 bytes: {response.content[:300]}")
+                f.write(raw[:2000])
+            print(f"   Debug dump: {debug_path} | First 200 bytes: {raw[:200]}")
             return None, None
 
-        # Save a copy of the image for inspection / debugging
-        img_ext = mime_type.split('/')[1]
-        img_path = os.path.join(output_dir, f'pnf-chart-latest.{img_ext}')
-        with open(img_path, 'wb') as f:
-            f.write(response.content)
-        print(f"✅ P&F chart saved to {img_path} ({size} bytes, {mime_type})")
-
-        image_data = base64.b64encode(response.content).decode('utf-8')
-        return image_data, mime_type
+        save_path = os.path.join(output_dir, f'pnf-chart-latest.{ext}')
+        with open(save_path, 'wb') as f:
+            f.write(raw)
+        print(f"✅ P&F chart (requests) saved to {save_path}")
+        return base64.b64encode(raw).decode('utf-8'), mime_type
 
     except Exception as e:
-        print(f"❌ Error fetching P&F chart: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ Requests P&F fetch also failed: {e}")
         return None, None
 
 
@@ -966,15 +992,19 @@ def main():
 
         if pnf_image_data:
             direction, count = read_pnf_column_with_gemini(
-                pnf_image_data, pnf_mime_type or 'image/gif', gemini_api_key
+                pnf_image_data, pnf_mime_type or 'image/png', gemini_api_key
             )
             if direction and count:
                 pnf_history = append_pnf_history(pnf_history, direction, count, today_date)
-                save_pnf_history(pnf_history)
             else:
-                print("⚠️  Vision read returned no data — history not updated today.")
+                print("⚠️  Vision read returned no data — saving stub entry for today.")
+                pnf_history = append_pnf_history(pnf_history, 'unknown', 0, today_date)
         else:
-            print("⚠️  No P&F image available — skipping vision read.")
+            print("⚠️  No P&F image available — saving stub entry for today.")
+            pnf_history = append_pnf_history(pnf_history, 'unknown', 0, today_date)
+
+        # Always save — ensures pnf-state.json exists after every run
+        save_pnf_history(pnf_history)
 
         # --- 4b: Compute signal/corroboration purely in Python from stored history ---
         pnf_signal_summary = compute_pnf_signal(pnf_history)
