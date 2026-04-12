@@ -278,59 +278,165 @@ PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[
 
 PNF_STATE_FILE = os.path.join('data', 'pnf-state.json')
 
-def load_pnf_yesterday_state():
-    """Load yesterday's P&F column state from disk. Returns dict or None."""
+# --------------------------------------------------------------------------
+# P&F state: a JSON file holding the last N daily readings.
+# Structure:
+# {
+#   "history": [
+#     {"date": "2026-04-11", "direction": "O", "count": 5},
+#     {"date": "2026-04-12", "direction": "O", "count": 7}
+#   ]
+# }
+# --------------------------------------------------------------------------
+
+def load_pnf_history():
+    """Load the full P&F history list. Returns list (newest last), empty list on first run."""
     if not os.path.exists(PNF_STATE_FILE):
-        print("ℹ️  No previous P&F state found (first run).")
-        return None
+        print("ℹ️  No P&F history found (first run).")
+        return []
     try:
         with open(PNF_STATE_FILE, 'r') as f:
-            state = json.load(f)
-        print(f"📂 Loaded P&F state from {state.get('date', 'unknown date')}: "
-              f"column={state.get('column_direction','?')}, boxes={state.get('column_boxes','?')}")
-        return state
+            data = json.load(f)
+        history = data.get('history', [])
+        print(f"📂 Loaded P&F history: {len(history)} entries, "
+              f"latest={history[-1] if history else 'none'}")
+        return history
     except Exception as e:
-        print(f"⚠️  Could not load P&F state: {e}")
-        return None
+        print(f"⚠️  Could not load P&F history: {e}")
+        return []
 
-def save_pnf_state(column_direction, column_boxes, signal, corroboration):
-    """Persist today's P&F column reading to disk for tomorrow's comparison."""
+
+def append_pnf_history(history, direction, count, today_str):
+    """Append today's reading. Replace any existing entry for today to avoid duplicates."""
+    history = [e for e in history if e.get('date') != today_str]
+    history.append({'date': today_str, 'direction': direction, 'count': count})
+    # Keep last 60 trading days
+    return history[-60:]
+
+
+def save_pnf_history(history):
+    """Write the history list back to disk."""
     os.makedirs('data', exist_ok=True)
-    state = {
-        'date': datetime.now().strftime('%Y-%m-%d'),
-        'column_direction': column_direction,   # 'X' or 'O'
-        'column_boxes': column_boxes,            # integer count
-        'signal': signal,                        # 'uptrend' | 'downtrend' | 'none'
-        'corroboration': corroboration,          # True | False
-    }
     try:
         with open(PNF_STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-        print(f"💾 P&F state saved: {state}")
+            json.dump({'history': history}, f, indent=2)
+        print(f"💾 P&F history saved ({len(history)} entries)")
     except Exception as e:
-        print(f"⚠️  Could not save P&F state: {e}")
+        print(f"⚠️  Could not save P&F history: {e}")
 
 
-def extract_pnf_state_from_analysis(analysis_text):
+def compute_pnf_signal(history):
     """
-    Ask Gemini for a structured P&F state JSON so we can persist it.
-    Returns (column_direction, column_boxes, signal, corroboration) or None tuple on failure.
+    Compute signal and corroboration from the last two history entries.
+
+    Rules:
+    - Direction CHANGE signal: the rightmost column is DIFFERENT from the
+      previous column AND has >= 3 boxes  →  signal triggered.
+    - Corroboration: signal triggered yesterday (count was exactly 3) and
+      today the same column has grown to 4+ boxes.
+
+    Returns a plain-English status string for the Gemini prompt.
+    """
+    if len(history) < 1:
+        return "No P&F history available yet."
+
+    today   = history[-1]
+    prev    = history[-2] if len(history) >= 2 else None
+
+    t_dir   = today['direction']
+    t_count = today['count']
+
+    lines = [
+        f"Today ({today['date']}): active column = {t_dir}, boxes = {t_count}"
+    ]
+
+    if prev:
+        p_dir   = prev['direction']
+        p_count = prev['count']
+        lines.append(f"Previous session ({prev['date']}): column = {p_dir}, boxes = {p_count}")
+
+        if t_dir != p_dir:
+            # New column started
+            if t_count >= 3:
+                signal_word = "UPTREND" if t_dir == 'X' else "DOWNTREND"
+                lines.append(f"⚡ DIRECTION CHANGE SIGNAL: new {t_dir} column with {t_count} boxes → {signal_word} signal TRIGGERED")
+                if p_count == 3 and t_count >= 4:
+                    lines.append(f"✅ CORROBORATION: column grew from 3 to {t_count} boxes — signal confirmed")
+            else:
+                lines.append(f"New {t_dir} column started but only {t_count} box(es) — signal NOT yet triggered (need 3)")
+        else:
+            # Same column continuing
+            lines.append(f"Same {t_dir} column continuing ({p_count} → {t_count} boxes)")
+            if p_count < 3 and t_count >= 3:
+                signal_word = "UPTREND" if t_dir == 'X' else "DOWNTREND"
+                lines.append(f"⚡ SIGNAL TRIGGERED TODAY: column reached 3 boxes → {signal_word} signal")
+            elif p_count == 3 and t_count >= 4:
+                lines.append(f"✅ CORROBORATION: column grew from 3 to {t_count} boxes — signal confirmed")
+            elif t_count >= 3:
+                lines.append(f"Signal already active (>= 3 boxes), column extending")
+    else:
+        lines.append("(First reading — no previous session to compare)")
+
+    return "\n".join(lines)
+
+
+def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
+    """
+    Dedicated, focused vision call: ask Gemini ONLY to read the rightmost
+    P&F column and return JSON {direction, count}.
+    Returns (direction, count) or (None, None) on failure.
     """
     import re
-    # Look for a JSON block Gemini may have embedded
-    match = re.search(r'\{[^{}]*"column_direction"[^{}]*\}', analysis_text, re.DOTALL)
-    if match:
-        try:
-            state = json.loads(match.group())
-            return (
-                state.get('column_direction', 'unknown'),
-                int(state.get('column_boxes', 0)),
-                state.get('signal', 'none'),
-                bool(state.get('corroboration', False)),
-            )
-        except Exception:
-            pass
-    return None, None, None, None
+    print("🔍 Reading P&F chart column via Gemini vision...")
+
+    model = GEMINI_VISION_MODEL
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    prompt = (
+        "This is a Point & Figure (P&F) chart. "
+        "Look ONLY at the rightmost (most recent) column. "
+        "Count how many boxes (X or O) are filled in that column. "
+        "Reply with ONLY a JSON object — no explanation, no markdown — in exactly this format:\n"
+        '{"direction": "X", "count": 5}\n'
+        "direction must be exactly \"X\" or \"O\". count must be an integer."
+    )
+
+    payload = {
+        "contents": [{"parts": [
+            {"text": prompt},
+            {"inline_data": {"mime_type": image_mime_type, "data": image_data}}
+        ]}],
+        "generationConfig": {"temperature": 0, "maxOutputTokens": 64}
+    }
+
+    try:
+        response = requests.post(url, headers={"Content-Type": "application/json"},
+                                 json=payload, timeout=30)
+        if not response.ok:
+            print(f"❌ Vision read failed (HTTP {response.status_code}): {response.text[:300]}")
+            return None, None
+
+        result = response.json()
+        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        print(f"   Gemini raw response: {text}")
+
+        # Strip markdown fences if present
+        text = re.sub(r"```[a-z]*", "", text).strip().strip("`").strip()
+
+        parsed = json.loads(text)
+        direction = parsed.get("direction", "").upper()
+        count = int(parsed.get("count", 0))
+
+        if direction not in ("X", "O") or count <= 0:
+            print(f"❌ Unexpected values from vision read: direction={direction}, count={count}")
+            return None, None
+
+        print(f"✅ P&F column read: direction={direction}, count={count}")
+        return direction, count
+
+    except Exception as e:
+        print(f"❌ Error reading P&F column: {e}")
+        return None, None
 
 
 def fetch_pnf_chart_image(output_dir='data'):
@@ -851,65 +957,54 @@ def main():
     
     # Step 4: Generate AI analysis
     ai_analysis = None
-    
+    today_date = datetime.now().strftime('%Y-%m-%d')
+
     if gemini_api_key:
-        # Fetch P&F chart image and yesterday's state for comparison
+        # --- 4a: Fetch P&F chart and read the column via a focused vision call ---
         pnf_image_data, pnf_mime_type = fetch_pnf_chart_image()
-        yesterday_pnf = load_pnf_yesterday_state()
+        pnf_history = load_pnf_history()
 
-        # Build yesterday context string for the prompt
-        if yesterday_pnf:
-            yest_dir   = yesterday_pnf.get('column_direction', '?')
-            yest_boxes = yesterday_pnf.get('column_boxes', '?')
-            yest_date  = yesterday_pnf.get('date', 'previous session')
-            yesterday_context = (
-                f"Yesterday ({yest_date}) the active P&F column was "
-                f"**{yest_dir}** with **{yest_boxes} boxes**."
-            )
-        else:
-            yesterday_context = "No previous P&F state is available (first run)."
-
-        # Build the P&F section of the prompt
-        today_date = datetime.now().strftime('%Y-%m-%d')
         if pnf_image_data:
-            pnf_image_note = "\nThe attached image is today's $SPX Point & Figure (P&F) chart from StockCharts."
+            direction, count = read_pnf_column_with_gemini(
+                pnf_image_data, pnf_mime_type or 'image/gif', gemini_api_key
+            )
+            if direction and count:
+                pnf_history = append_pnf_history(pnf_history, direction, count, today_date)
+                save_pnf_history(pnf_history)
+            else:
+                print("⚠️  Vision read returned no data — history not updated today.")
+        else:
+            print("⚠️  No P&F image available — skipping vision read.")
+
+        # --- 4b: Compute signal/corroboration purely in Python from stored history ---
+        pnf_signal_summary = compute_pnf_signal(pnf_history)
+        print(f"📈 P&F signal summary:\n{pnf_signal_summary}")
+
+        # --- 4c: Build P&F section for the main (text-only) Gemini prompt ---
+        if pnf_image_data and pnf_history and pnf_history[-1]['date'] == today_date:
             pnf_section = f"""
 ### **S&P 500 Point & Figure (P&F) Chart Analysis**
-The attached chart is the $SPX P&F chart (daily, 3-box reversal) for **{today_date}**.
+The $SPX P&F chart (daily, 3-box reversal) was read automatically for {today_date}.
 
-**Previous session context:** {yesterday_context}
+**Computed column status:**
+{pnf_signal_summary}
 
-**P&F signal rules:**
-- A direction CHANGE is signalled when a NEW column contains **3 or more boxes** (3× X = uptrend signal; 3× O = downtrend signal).
-- **Corroboration** occurs when that same column grows to **4 or more boxes** (yesterday showed 3, today shows 4+), confirming the signal.
+**P&F signal rules (for your commentary):**
+- 3× X in a new column = uptrend signal  |  3× O in a new column = downtrend signal
+- 4+ boxes in that same column = corroboration (signal confirmed)
 
-**Your task — answer each point precisely:**
-1. What is the direction of today's active column? (X = rising demand / O = falling supply)
-2. How many boxes does today's active column contain?
-3. Comparing to yesterday ({yest_boxes if yesterday_pnf else 'unknown'} boxes in a {yest_dir if yesterday_pnf else '?'} column):
-   - Is this the same column continuing, or has a new column started?
-   - If a new column: has the 3-box direction-change signal triggered? (yes/no)
-   - If the signal already triggered yesterday: does today add a 4th+ box, providing **corroboration**? (yes/no)
-4. Overall P&F bias: **Bullish**, **Bearish**, or **Neutral** — and why.
-5. Any notable P&F support/resistance levels visible on the chart.
-
-At the end of your P&F section, output a single JSON block (so the state can be saved for tomorrow) in exactly this format:
-```json
-{{"column_direction": "X or O", "column_boxes": <integer>, "signal": "uptrend or downtrend or none", "corroboration": true or false}}
-```
+Based on the above facts, provide your P&F commentary: is a signal active? is it corroborated? what is the directional bias?
 """
         else:
-            pnf_image_note = ""
             pnf_section = f"""
 ### **S&P 500 Point & Figure (P&F) Chart Analysis**
-Note: The P&F chart image could not be fetched today.
-
-**Previous session context:** {yesterday_context}
-
-Based on the previous session data and the MarketGauge indicators above, describe the likely P&F direction consistent with the SPY/QQQ technical picture. State clearly that a chart image was unavailable.
+P&F chart data was unavailable for {today_date}.
+{f"Last known reading: {pnf_history[-1]}" if pnf_history else "No historical data yet."}
+State clearly that chart data was unavailable and no signal can be confirmed today.
 """
 
-        prompt = f"""You are analyzing market data from MarketGauge for {today_date}.{pnf_image_note}
+        # --- 4d: Main text-only analysis prompt ---
+        prompt = f"""You are analyzing market data from MarketGauge for {today_date}.
 
 Here is the current market data:
 
@@ -958,38 +1053,13 @@ Same structure using ONLY QQQ row data
 - Short-term outlook based on data
 - Medium-term outlook based on data
 - Long-term outlook based on data
-- **P&F Chart Signal:** State the current column direction and box count, whether a 3-box direction-change signal has triggered, and whether corroboration (4+ boxes) is present — conclude Bullish / Bearish / Neutral.
+- **P&F Chart Signal:** {pnf_signal_summary.splitlines()[0]} — conclude Bullish / Bearish / Neutral
 - Key alerts or observations
 
 Be direct and specific. Use the exact numbers from the data table. Format for HTML display."""
 
-        ai_analysis = call_gemini_api(
-            prompt, gemini_api_key,
-            image_data=pnf_image_data,
-            image_mime_type=pnf_mime_type or 'image/gif'
-        )
-
-        # Persist today's P&F state so tomorrow's run can compare.
-        # Always write the file — even if image was unavailable — so the next run
-        # knows the script ran and can report "no chart data yesterday".
-        if ai_analysis:
-            col_dir, col_boxes, signal, corroboration = extract_pnf_state_from_analysis(ai_analysis)
-            if col_dir and col_boxes:
-                save_pnf_state(col_dir, col_boxes, signal or 'none', bool(corroboration))
-            else:
-                print("⚠️  Could not extract P&F state JSON from analysis.")
-                if pnf_image_data:
-                    print("   Chart was sent but Gemini did not output the JSON block — check prompt.")
-                # Still write a stub so tomorrow knows the date we last ran
-                save_pnf_state(
-                    column_direction='unknown',
-                    column_boxes=0,
-                    signal='none',
-                    corroboration=False
-                )
-        else:
-            # AI call failed entirely — write a dated stub so the file exists
-            save_pnf_state('unknown', 0, 'none', False)
+        # Text-only call — vision was handled separately above
+        ai_analysis = call_gemini_api(prompt, gemini_api_key)
     
     # Step 5: Generate HTML report
     html_success = generate_html_report(data, ai_analysis)
