@@ -272,7 +272,7 @@ import requests
 
 GEMINI_MODEL = "gemini-2.5-flash-lite"
 # gemini-2.5-flash-lite is text-only; use a vision-capable model when sending images
-GEMINI_VISION_MODEL = "gemini-1.5-flash"
+GEMINI_VISION_MODEL = "gemini-2.0-flash"
 
 PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
 
