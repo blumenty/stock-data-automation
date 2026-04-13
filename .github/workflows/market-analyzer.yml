@@ -55,8 +55,8 @@ jobs:
         git add data/Shazam-market-daily.csv
         git add data/Shazam-market-daily.html
         git add data/shazam-tsi-history.csv
-        git add data/pnf-chart-latest.png
-        git add data/pnf-state.json
+        [ -f data/pnf-chart-latest.png ] && git add data/pnf-chart-latest.png || true
+        [ -f data/pnf-state.json ] && git add data/pnf-state.json || true
         
         # Check if there are changes to commit
         if git diff --staged --quiet; then
