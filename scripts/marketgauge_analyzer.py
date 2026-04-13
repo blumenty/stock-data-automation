@@ -388,10 +388,10 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     print(f"   Model: {GEMINI_VISION_MODEL} | Image size: {len(image_data)} chars b64 | MIME: {image_mime_type}")
 
 
-model = GEMINI_VISION_MODEL
-url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    model = GEMINI_VISION_MODEL
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-prompt = (
+    prompt = (
     "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
 
     "On the FAR RIGHT are price numbers (e.g. 6800.00, 6850.00). "
@@ -431,7 +431,7 @@ prompt = (
     "OUTPUT FORMAT:\n"
     "Return ONLY valid JSON with no explanation:\n"
     "{\"direction\": \"X\", \"count\": 9}"
-)
+    )
 
     # Disable safety filters — a stock chart should never trigger them, but
     # Gemini sometimes returns finishReason=SAFETY for financial images.
