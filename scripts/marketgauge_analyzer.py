@@ -392,42 +392,25 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-    "Think step-by-step and verify the full column height before answering.\n"
-    "Do NOT stop after counting only the first visible cluster.\n\n"    
-    "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
-
-    "On the FAR RIGHT are price numbers (e.g. 6800.00, 6850.00). "
-    "These numbers form the vertical axis — IGNORE them completely.\n\n"
-
-    "Immediately to the LEFT of the numbers is the chart grid.\n\n"
-
-    "A P&F column is defined as:\n"
-    "- A vertical stack of marks in the SAME column\n"
-    "- Marks are ALL the same type: either X or O\n"
-    "- The marks are CONTIGUOUS (no empty gaps between them)\n"
-    "- The column ends when a gap (empty cell) appears above or below\n\n"
-
-    "YOUR TASK:\n"
-    "1. Start at the price numbers on the right edge.\n"
-    "2. Move LEFT until you encounter the FIRST mark (X, O, or digit/letter).\n"
-    "3. This identifies the RIGHTMOST column.\n\n"
-
-    "4. LOCK this column — do NOT move left or right from this position.\n\n"
-
-    "5. From the FIRST mark you found:\n"
-    "   - Scan UPWARD in the SAME column and count all contiguous marks\n"
-    "   - Then scan DOWNWARD in the SAME column and count all contiguous marks\n\n"
-
-    "6. Combine both directions + the starting mark to get TOTAL count.\n\n"
-
-    "CRITICAL RULES:\n"
-    "- Ignore faint gaps caused by grid lines or image artifacts\n"
-    "- Only stop when there is a CLEAR empty row (no mark at all)\n"
-    "- Digits/letters count as 1 mark\n"
-    "- Do NOT stop early — the column may be taller than it first appears\n\n"
-
-    "OUTPUT FORMAT:\n"
-    "{\"direction\": \"X\", \"count\": <number>}"
+        "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
+        "On the FAR RIGHT are price numbers (e.g. 6800.00, 6850.00) — that is the Y-axis scale, IGNORE them.\n\n"
+        "Immediately to the LEFT of those numbers is the chart grid. "
+        "Each P&F column is a single contiguous cluster of identical marks — all X's or all O's — "
+        "with no empty rows between them.\n\n"
+        "YOUR TASK:\n"
+        "1. Start at the price numbers on the right edge and move LEFT.\n"
+        "2. The FIRST mark (X, O, digit, or letter) you encounter identifies the RIGHTMOST column.\n"
+        "3. LOCK onto that column — do not drift left or right.\n"
+        "4. From that first mark, scan UPWARD counting all contiguous marks, "
+        "then scan DOWNWARD counting all contiguous marks.\n"
+        "5. Total = upward count + 1 (the starting mark) + downward count.\n\n"
+        "RULES:\n"
+        "- A digit (like '4') or letter (like 'A') in the cluster = 1 mark of the same type as the column\n"
+        "- Count ALL marks regardless of color (black, green, red) or lines crossing through\n"
+        "- Ignore faint grid lines — only stop when there is a clearly empty row\n"
+        "- Do NOT stop early; the column may extend further than it first appears\n\n"
+        "Output ONLY this JSON:\n"
+        "{\"direction\": \"X\", \"count\": 4}"
     )
 
     # Disable safety filters — a stock chart should never trigger them, but
@@ -444,12 +427,17 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             {"text": prompt},
             {"inline_data": {"mime_type": image_mime_type, "data": image_data}}
         ]}],
-        "generationConfig": {"temperature": 0, "maxOutputTokens": 128},
+        "generationConfig": {
+            "temperature": 0,
+            "maxOutputTokens": 64,
+            "responseMimeType": "application/json",  # forces raw JSON output, no narrative
+        },
         "safetySettings": safety_off,
     }
 
-    # Try primary model, then fallbacks (all support vision/multimodal on free tier)
-    models_to_try = [GEMINI_VISION_MODEL, "gemini-2.0-flash-lite", "gemini-1.5-flash-8b"]
+    # gemini-2.5-flash-lite is the only confirmed free-tier vision model;
+    # gemini-2.5-flash as fallback in case of transient quota issues
+    models_to_try = [GEMINI_VISION_MODEL, "gemini-2.5-flash"]
 
     for model_attempt in models_to_try:
       try:
