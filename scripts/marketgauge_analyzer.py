@@ -391,36 +391,22 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "You are looking at a CROPPED image of the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
-        "LAYOUT OF THE IMAGE:\n"
-        "- FAR RIGHT EDGE: two columns of price numbers (e.g. 6800.00, 6850.00, 7000.00). "
-        "These are the right-side Y-axis price labels — NOT part of the chart data.\n"
-        "- IMMEDIATELY TO THE LEFT of those price labels: the last 2–3 active columns of the chart, "
-        "made up of X marks and O marks stacked vertically.\n\n"
-        "STEP 1 — Locate the LAST column:\n"
-        "Start at the right-side price labels and scan LEFT. "
-        "The VERY FIRST vertical stack of X's or O's you encounter is the LAST (most recent) column. "
-        "There are ZERO chart marks between this column and the price labels on the right. "
-        "Include ALL marks regardless of color (green, black, red) or overlapping trend lines.\n\n"
-        "STEP 2 — Identify type and read coordinates:\n"
-        "- Is the last column X marks or O marks? (Always exactly one type, never mixed.)\n"
-        "- Using the right-side Y-axis labels, read the price level of the BOTTOM-MOST mark in that column.\n"
-        "- Read the price level of the TOP-MOST mark in that column.\n"
-        "- Determine the box size: the price difference between two adjacent rows on the Y-axis grid.\n\n"
-        "STEP 3 — Verify the count with coordinates:\n"
-        "Calculate: count = ((top_price - bottom_price) / box_size) + 1\n"
-        "This arithmetic cross-check must agree with your visual count. "
-        "A digit (e.g. '4') or letter (e.g. 'A', 'B', 'C') inside the column is a month marker — "
-        "count it as 1 mark of the same type as the column.\n\n"
-        "STEP 4 — Output:\n"
-        "Reply with ONLY a raw JSON object — no markdown, no explanation:\n"
-        "{\"direction\": \"X_or_O\", \"count\": integer, \"low\": price, \"high\": price}\n\n"
-        "EXAMPLES:\n"
-        "  Last column O's from 6600 to 6750, box size 50: count = ((6750-6600)/50)+1 = 4 "
-        "→ {\"direction\": \"O\", \"count\": 4, \"low\": 6600, \"high\": 6750}\n"
-        "  Last column X's from 6500 to 6850, box size 50, with digit '4' inside: count = ((6850-6500)/50)+1 = 8 "
-        "→ {\"direction\": \"X\", \"count\": 8, \"low\": 6500, \"high\": 6850}\n\n"
-        "direction must be exactly \"X\" or \"O\". count must be a positive integer."
+        "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
+        "On the RIGHT EDGE you will see price numbers (e.g. 6800.00, 6850.00) — that is the Y-axis scale, ignore it.\n\n"
+        "To the left of those numbers is the chart grid. "
+        "P&F columns are vertical groups of marks. "
+        "Each column is a single unbroken cluster of identical marks — all X's or all O's — "
+        "stacked on adjacent rows with no empty rows between them.\n\n"
+        "YOUR JOB: find and count the RIGHTMOST column.\n\n"
+        "1. Scan from the right edge toward the left.\n"
+        "2. The first cluster of marks you hit is the rightmost (last) column.\n"
+        "3. That cluster is entirely X's or entirely O's — never mixed.\n"
+        "4. Count every mark in it, top to bottom.\n"
+        "   - A single digit (like '4') or letter (like 'A') sitting inside the cluster "
+        "is a month label occupying one box — count it as 1 mark of the same type.\n"
+        "   - Count ALL marks regardless of color (black, green, red) or any lines crossing through.\n\n"
+        "Reply with ONLY this JSON, nothing else:\n"
+        "{\"direction\": \"X\", \"count\": 4}"
     )
 
     # Disable safety filters — a stock chart should never trigger them, but
@@ -437,7 +423,7 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             {"text": prompt},
             {"inline_data": {"mime_type": image_mime_type, "data": image_data}}
         ]}],
-        "generationConfig": {"temperature": 0, "maxOutputTokens": 256},
+        "generationConfig": {"temperature": 0, "maxOutputTokens": 128},
         "safetySettings": safety_off,
     }
 
@@ -488,17 +474,13 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             parsed = json.loads(clean)
         except json.JSONDecodeError as e:
             print(f"   JSON parse error: {e} | text: {repr(clean)}")
-            # Regex last resort — extract direction and count at minimum
+            # Regex last resort
             dir_match = re.search(r'"direction"\s*:\s*"([XO])"', raw_text, re.IGNORECASE)
             cnt_match = re.search(r'"count"\s*:\s*(\d+)', raw_text)
             if dir_match and cnt_match:
                 d = dir_match.group(1).upper()
                 c = int(cnt_match.group(1))
-                low_m  = re.search(r'"low"\s*:\s*([\d.]+)', raw_text)
-                high_m = re.search(r'"high"\s*:\s*([\d.]+)', raw_text)
-                low_v  = float(low_m.group(1))  if low_m  else None
-                high_v = float(high_m.group(1)) if high_m else None
-                print(f"   Recovered via regex: direction={d}, count={c}, low={low_v}, high={high_v}")
+                print(f"   Recovered via regex: direction={d}, count={c}")
                 return d, c
             print(f"   Could not parse response from {model_attempt}, trying next model")
             continue
@@ -509,13 +491,6 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
         except (ValueError, TypeError):
             count = 0
 
-        # Extract coordinate fields for logging (optional, non-blocking)
-        try:
-            low_val  = float(parsed.get("low",  0) or 0)
-            high_val = float(parsed.get("high", 0) or 0)
-        except (ValueError, TypeError):
-            low_val = high_val = 0.0
-
         if direction not in ("X", "O"):
             print(f"   direction='{direction}' is not X or O, trying next model")
             continue
@@ -523,8 +498,7 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             print(f"   count={count} is not positive, trying next model")
             continue
 
-        coord_info = f", low={low_val}, high={high_val}" if low_val or high_val else ""
-        print(f"✅ P&F column read: direction={direction}, count={count}{coord_info}")
+        print(f"✅ P&F column read: direction={direction}, count={count}")
         return direction, count
 
       except Exception as e:
