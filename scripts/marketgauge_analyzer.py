@@ -276,33 +276,27 @@ GEMINI_VISION_MODEL = "gemini-2.0-flash"
 
 PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
 
-PNF_STATE_FILE = os.path.join('data', 'pnf-state.json')
+PNF_STATE_FILE = os.path.join('data', 'pnf-state.csv')
 
 # --------------------------------------------------------------------------
-# P&F state: a JSON file holding the last N daily readings.
-# Structure:
-# {
-#   "history": [
-#     {"date": "2026-04-11", "direction": "O", "count": 5},
-#     {"date": "2026-04-12", "direction": "O", "count": 7}
-#   ]
-# }
+# P&F state: a CSV file holding the last N daily readings.
+# Columns: date, direction, count
 # --------------------------------------------------------------------------
 
 def load_pnf_history():
-    """Load the full P&F history list. Returns list (newest last), empty list on first run."""
+    """Load the full P&F history list. Returns list of dicts (newest last)."""
     if not os.path.exists(PNF_STATE_FILE):
-        print("ℹ️  No P&F history found (first run).")
+        print("No P&F history found (first run).")
         return []
     try:
-        with open(PNF_STATE_FILE, 'r') as f:
-            data = json.load(f)
-        history = data.get('history', [])
-        print(f"📂 Loaded P&F history: {len(history)} entries, "
+        df = pd.read_csv(PNF_STATE_FILE)
+        df['count'] = pd.to_numeric(df['count'], errors='coerce').fillna(0).astype(int)
+        history = df.to_dict('records')
+        print(f"Loaded P&F history: {len(history)} entries, "
               f"latest={history[-1] if history else 'none'}")
         return history
     except Exception as e:
-        print(f"⚠️  Could not load P&F history: {e}")
+        print(f"Could not load P&F history: {e}")
         return []
 
 
@@ -315,14 +309,14 @@ def append_pnf_history(history, direction, count, today_str):
 
 
 def save_pnf_history(history):
-    """Write the history list back to disk."""
+    """Write the history list to pnf-state.csv."""
     os.makedirs('data', exist_ok=True)
     try:
-        with open(PNF_STATE_FILE, 'w') as f:
-            json.dump({'history': history}, f, indent=2)
-        print(f"💾 P&F history saved ({len(history)} entries)")
+        df = pd.DataFrame(history, columns=['date', 'direction', 'count'])
+        df.to_csv(PNF_STATE_FILE, index=False)
+        print(f"P&F history saved to {PNF_STATE_FILE} ({len(history)} entries)")
     except Exception as e:
-        print(f"⚠️  Could not save P&F history: {e}")
+        print(f"Could not save P&F history: {e}")
 
 
 def compute_pnf_signal(history):
@@ -397,7 +391,9 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
         "This image is a Point & Figure (P&F) stock chart showing columns of X's and O's. "
         "X columns go up (demand), O columns go down (supply). "
         "Find the rightmost column — it is the most recent one, at the far right edge of the chart. "
-        "Count exactly how many X's or O's are filled/marked in that rightmost column. "
+        "Count every filled mark in that rightmost column. "
+        "Important: a digit or number printed inside the column (e.g. 1, 2, 3 …) represents a month "
+        "boundary and counts as ONE additional X or O — include it in your total count. "
         "Reply with ONLY a raw JSON object, nothing else, no markdown, no explanation:\n"
         '{"direction": "X", "count": 7}\n'
         'Use "X" if the rightmost column contains X marks, "O" if it contains O marks. '
