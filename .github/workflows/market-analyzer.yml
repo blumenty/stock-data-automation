@@ -38,8 +38,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
 
-        # Selenium 4.6+ auto-downloads the matching ChromeDriver — no manual install needed
-        echo "✅ Chrome installed (system chromedriver removed — Selenium will manage its own)"
+        # Selenium 4.6+ auto-downloads the matching ChromeDriver - no manual install needed
+        echo "Chrome installed (system chromedriver removed - Selenium will manage its own)"
         google-chrome --version
         
     - name: Run Market Analyzer
@@ -62,92 +62,9 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          git commit -m "📊 Market analysis update - $(date +'%Y-%m-%d %H:%M UTC')"
+          git commit -m "Market analysis update - $(date +'%Y-%m-%d %H:%M UTC')"
           git push
-          echo "✅ Changes committed and pushed successfully"
-        fi
-        
-    - name: Upload artifacts (for debugging)
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: market-reports
-        path: |
-          data/Shazam-market-daily.csv
-          data/Shazam-market-daily.html
-          data/shazam-tsi-history.csv
-          data/pnf-chart-latest.png
-          data/pnf-state.json
-        retention-days: 7
-
-
-name: Market Analyzer
-
-on:
-  schedule:
-    # Run at 04:00 AM UTC daily (after US market close)
-    - cron: '30 3 * * *'
-  workflow_dispatch:  # Allow manual trigger
-
-jobs:
-  analyze-market:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Full history for TSI tracking
-        
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        cache: 'pip'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas requests beautifulsoup4 lxml selenium
-        
-    - name: Install Chrome and ChromeDriver
-      run: |
-        # Remove any system-installed chromedriver that may conflict with Selenium's auto-manager
-        sudo rm -f /usr/bin/chromedriver /usr/local/bin/chromedriver
-
-        # Install latest stable Chrome
-        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
-
-        # Selenium 4.6+ auto-downloads the matching ChromeDriver — no manual install needed
-        echo "✅ Chrome installed (system chromedriver removed — Selenium will manage its own)"
-        google-chrome --version
-        
-    - name: Run Market Analyzer
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      run: |
-        python scripts/marketgauge_analyzer.py
-        
-    - name: Commit and push changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add data/Shazam-market-daily.csv
-        git add data/Shazam-market-daily.html
-        git add data/shazam-tsi-history.csv
-        [ -f data/pnf-chart-latest.png ] && git add data/pnf-chart-latest.png || true
-        [ -f data/pnf-state.json ] && git add data/pnf-state.json || true
-        
-        # Check if there are changes to commit
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "📊 Market analysis update - $(date +'%Y-%m-%d %H:%M UTC')"
-          git push
-          echo "✅ Changes committed and pushed successfully"
+          echo "Changes committed and pushed successfully"
         fi
         
     - name: Upload artifacts (for debugging)
