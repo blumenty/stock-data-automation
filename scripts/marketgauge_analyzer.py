@@ -489,20 +489,52 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
         return None, None
 
 
-def fetch_pnf_chart_image(output_dir='data'):
-    """Fetch the $SPX P&F chart as a PNG screenshot using Selenium (real browser),
-    falling back to a plain requests download.
-    Saves data/pnf-chart-latest.png for debugging.
-    Returns (base64_data, 'image/png') or (None, None)."""
-    print(f"📊 Fetching P&F chart from StockCharts...")
-    os.makedirs(output_dir, exist_ok=True)
-    img_path = os.path.join(output_dir, 'pnf-chart-latest.png')
+def _save_image_bytes(raw, output_dir, label='pnf-chart-latest'):
+    """Detect image format, save to data/, return (base64, mime_type)."""
+    if raw[:6] in (b'GIF87a', b'GIF89a'):
+        mime_type, ext = 'image/gif', 'gif'
+    elif raw[:8] == b'\x89PNG\r\n\x1a\n':
+        mime_type, ext = 'image/png', 'png'
+    elif raw[:2] == b'\xff\xd8':
+        mime_type, ext = 'image/jpeg', 'jpg'
+    else:
+        print(f"   Unknown image format, first bytes: {raw[:12]}")
+        return None, None
+    save_path = os.path.join(output_dir, f'{label}.{ext}')
+    with open(save_path, 'wb') as f:
+        f.write(raw)
+    print(f"   Saved {save_path} ({len(raw)} bytes, {mime_type})")
+    return base64.b64encode(raw).decode('utf-8'), mime_type
 
-    # ── Primary: Selenium screenshot (bypasses bot detection) ──────────────
+
+def fetch_pnf_chart_image(output_dir='data'):
+    """Fetch the $SPX P&F chart image from StockCharts.
+
+    Strategy:
+    1. Selenium: load the page, find the chart <img> by src pattern '/c-sc/sc'
+       (StockCharts' chart-rendering server), then download the image directly
+       from that URL using the browser session cookies.  If the src-based lookup
+       fails, fall back to finding the largest image on the page via JS, then
+       to a full-page screenshot as a last resort.
+    2. Requests fallback: fetch the HTML page, parse it with BeautifulSoup to
+       locate the chart img src, then download that image URL.
+
+    Returns (base64_data, mime_type) or (None, None).
+    """
+    print(f"Fetching P&F chart from StockCharts...")
+    os.makedirs(output_dir, exist_ok=True)
+
+    _headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Referer': 'https://stockcharts.com/freecharts/pnf.php',
+    }
+
+    # ── Primary: Selenium ───────────────────────────────────────────────────
     if SELENIUM_AVAILABLE:
         driver = None
         try:
-            print("   🌐 Using Selenium to render P&F chart...")
+            print("   Using Selenium to render P&F chart...")
             chrome_options = Options()
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--no-sandbox')
@@ -515,29 +547,77 @@ def fetch_pnf_chart_image(output_dir='data'):
             )
             driver = webdriver.Chrome(options=chrome_options)
             driver.get(PNF_CHART_URL)
-            print("   ⏳ Waiting for chart to render...")
-            time.sleep(8)
+            print("   Waiting 10 s for chart to render...")
+            time.sleep(10)
 
-            # Try to find the chart <img> element and screenshot just that area
-            try:
-                img_el = WebDriverWait(driver, 10).until(
-                    EC.presence_of_element_located((By.TAG_NAME, 'img'))
-                )
-                png_bytes = img_el.screenshot_as_png
-                print("   📸 Screenshotted <img> element")
-            except Exception:
-                # Fallback: screenshot the full page
+            # ── Step 1: find the chart img src ──────────────────────────────
+            # StockCharts renders charts via their /c-sc/sc server.
+            # Try CSS selectors from most to least specific.
+            chart_src = None
+            chart_el = None
+            for selector in [
+                'img[src*="c-sc/sc"]',
+                'img[src*="/c-sc/"]',
+                'img[src*="stockcharts.com/c-sc"]',
+                '#chartImg',
+            ]:
+                try:
+                    el = driver.find_element(By.CSS_SELECTOR, selector)
+                    src = el.get_attribute('src') or ''
+                    if src:
+                        chart_src = src
+                        chart_el = el
+                        print(f"   Chart img found via '{selector}': {src[:100]}")
+                        break
+                except Exception:
+                    continue
+
+            # ── Step 2: if no src match, pick the largest img via JS ────────
+            if not chart_src:
+                print("   No chart img found by selector — trying JS largest-img fallback...")
+                chart_src = driver.execute_script("""
+                    var imgs = Array.from(document.querySelectorAll('img'));
+                    var best = null, bestArea = 0;
+                    imgs.forEach(function(img) {
+                        var area = img.naturalWidth * img.naturalHeight;
+                        if (area > bestArea) { bestArea = area; best = img; }
+                    });
+                    return best ? best.src : null;
+                """)
+                if chart_src:
+                    print(f"   Largest img src: {chart_src[:100]}")
+
+            # ── Step 3: download the image from its src URL ─────────────────
+            if chart_src:
+                cookies = {c['name']: c['value'] for c in driver.get_cookies()}
+                try:
+                    resp = requests.get(chart_src, headers=_headers, cookies=cookies, timeout=30)
+                    resp.raise_for_status()
+                    result = _save_image_bytes(resp.content, output_dir)
+                    if result[0]:
+                        print(f"✅ P&F chart downloaded from src URL")
+                        return result
+                    print("   src URL download returned non-image; trying element screenshot")
+                except Exception as e:
+                    print(f"   src URL download failed ({e}); trying element screenshot")
+
+            # ── Step 4: screenshot the element (or full page) ───────────────
+            if chart_el:
+                png_bytes = chart_el.screenshot_as_png
+                print("   Screenshotted chart element")
+            else:
                 png_bytes = driver.get_screenshot_as_png()
-                print("   📸 Screenshotted full page (img element not found)")
+                print("   Screenshotted full page (chart element not found)")
 
-            with open(img_path, 'wb') as f:
-                f.write(png_bytes)
-            size = len(png_bytes)
-            print(f"✅ P&F chart saved to {img_path} ({size} bytes, image/png)")
-            return base64.b64encode(png_bytes).decode('utf-8'), 'image/png'
+            result = _save_image_bytes(png_bytes, output_dir)
+            if result[0]:
+                print("✅ P&F chart saved from screenshot")
+                return result
 
         except Exception as e:
-            print(f"⚠️  Selenium P&F fetch failed: {e}")
+            print(f"   Selenium P&F fetch failed: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             if driver:
                 try:
@@ -545,44 +625,46 @@ def fetch_pnf_chart_image(output_dir='data'):
                 except Exception:
                     pass
 
-    # ── Fallback: plain requests (may be blocked) ───────────────────────────
-    print("   📡 Trying plain requests fallback for P&F chart...")
+    # ── Fallback: requests — parse HTML then download chart img ────────────
+    print("   Trying requests fallback for P&F chart...")
     try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Referer': 'https://stockcharts.com/freecharts/pnf.php',
-            'Accept': 'image/*,*/*;q=0.8',
-        }
-        response = requests.get(PNF_CHART_URL, headers=headers, timeout=30)
-        response.raise_for_status()
+        resp = requests.get(PNF_CHART_URL, headers=_headers, timeout=30)
+        resp.raise_for_status()
 
-        content_type = response.headers.get('Content-Type', '').lower()
-        raw = response.content
-        print(f"   Content-Type: {content_type} | Size: {len(raw)} bytes")
+        content_type = resp.headers.get('Content-Type', '').lower()
+        print(f"   Page Content-Type: {content_type} | {len(resp.content)} bytes")
 
-        if 'gif' in content_type or raw[:6] in (b'GIF87a', b'GIF89a'):
-            mime_type, ext = 'image/gif', 'gif'
-        elif 'png' in content_type or raw[:8] == b'\x89PNG\r\n\x1a\n':
-            mime_type, ext = 'image/png', 'png'
-        elif 'jpeg' in content_type or raw[:2] == b'\xff\xd8':
-            mime_type, ext = 'image/jpeg', 'jpg'
-        else:
-            print(f"❌ Requests fallback also returned non-image content.")
-            debug_path = os.path.join(output_dir, 'pnf-fetch-debug.txt')
-            with open(debug_path, 'wb') as f:
-                f.write(raw[:2000])
-            print(f"   Debug dump: {debug_path} | First 200 bytes: {raw[:200]}")
+        # The PHP page returns HTML — parse it to find the chart img src
+        soup = BeautifulSoup(resp.content, 'html.parser')
+        chart_img = (
+            soup.find('img', src=lambda s: s and '/c-sc/sc' in s) or
+            soup.find('img', src=lambda s: s and '/c-sc/' in s) or
+            soup.find('img', id='chartImg')
+        )
+
+        if not chart_img:
+            print("   Could not find chart img in HTML")
             return None, None
 
-        save_path = os.path.join(output_dir, f'pnf-chart-latest.{ext}')
-        with open(save_path, 'wb') as f:
-            f.write(raw)
-        print(f"✅ P&F chart (requests) saved to {save_path}")
-        return base64.b64encode(raw).decode('utf-8'), mime_type
+        src = chart_img.get('src', '')
+        if src.startswith('//'):
+            src = 'https:' + src
+        elif src.startswith('/'):
+            src = 'https://stockcharts.com' + src
+        print(f"   Downloading chart from: {src[:100]}")
+
+        img_resp = requests.get(src, headers=_headers, timeout=30)
+        img_resp.raise_for_status()
+        result = _save_image_bytes(img_resp.content, output_dir)
+        if result[0]:
+            print("✅ P&F chart saved via requests fallback")
+            return result
+
+        print("❌ Requests fallback returned non-image content")
+        return None, None
 
     except Exception as e:
-        print(f"❌ Requests P&F fetch also failed: {e}")
+        print(f"❌ Requests P&F fetch failed: {e}")
         return None, None
 
 
