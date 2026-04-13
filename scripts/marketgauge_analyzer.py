@@ -392,6 +392,8 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
+    "Think step-by-step and verify the full column height before answering.\n"
+    "Do NOT stop after counting only the first visible cluster.\n\n"    
     "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
 
     "On the FAR RIGHT are price numbers (e.g. 6800.00, 6850.00). "
