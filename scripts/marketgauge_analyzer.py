@@ -390,24 +390,47 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     model = GEMINI_VISION_MODEL
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-    prompt = (
-        "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
-        "On the RIGHT EDGE you will see price numbers (e.g. 6800.00, 6850.00) — that is the Y-axis scale, ignore it.\n\n"
-        "To the left of those numbers is the chart grid. "
-        "P&F columns are vertical groups of marks. "
-        "Each column is a single unbroken cluster of identical marks — all X's or all O's — "
-        "stacked on adjacent rows with no empty rows between them.\n\n"
-        "YOUR JOB: find and count the RIGHTMOST column.\n\n"
-        "1. Scan from the right edge toward the left.\n"
-        "2. The first cluster of marks you hit is the rightmost (last) column.\n"
-        "3. That cluster is entirely X's or entirely O's — never mixed.\n"
-        "4. Count every mark in it, top to bottom.\n"
-        "   - A single digit (like '4') or letter (like 'A') sitting inside the cluster "
-        "is a month label occupying one box — count it as 1 mark of the same type.\n"
-        "   - Count ALL marks regardless of color (black, green, red) or any lines crossing through.\n\n"
-        "Reply with ONLY this JSON, nothing else:\n"
-        "{\"direction\": \"X\", \"count\": 4}"
-    )
+   prompt = (
+    "This image shows the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
+
+    "On the FAR RIGHT are price numbers (e.g. 6800.00, 6850.00). "
+    "These numbers form the vertical axis — IGNORE them completely.\n\n"
+
+    "Immediately to the LEFT of the numbers is the chart grid.\n\n"
+
+    "A P&F column is defined as:\n"
+    "- A vertical stack of marks in the SAME column\n"
+    "- Marks are ALL the same type: either X or O\n"
+    "- The marks are CONTIGUOUS (no empty gaps between them)\n"
+    "- The column ends when a gap (empty cell) appears above or below\n\n"
+
+    "YOUR TASK:\n"
+    "1. Start at the price numbers on the right edge.\n"
+    "2. Move LEFT until you encounter the FIRST mark (X, O, or a digit/letter).\n"
+    "3. This identifies the RIGHTMOST column.\n"
+    "4. From that exact column, scan vertically and collect ONLY marks that:\n"
+    "   - Are in the SAME column (no horizontal movement)\n"
+    "   - Are contiguous (no skipping rows)\n\n"
+
+    "COUNTING RULES:\n"
+    "- Count each X or O as 1\n"
+    "- If a digit or letter appears in the column, it represents a box — count it as 1\n"
+    "- Ignore color, size, or lines crossing the marks\n\n"
+
+    "STOP when:\n"
+    "- You reach an empty cell (gap)\n"
+    "- OR the marks are no longer the same type (X vs O)\n"
+    "- OR you would need to move sideways to continue\n\n"
+
+    "IMPORTANT:\n"
+    "- Do NOT include marks from adjacent columns\n"
+    "- Do NOT skip over gaps\n"
+    "- Do NOT count anything outside this single vertical column\n\n"
+
+    "OUTPUT FORMAT:\n"
+    "Return ONLY valid JSON with no explanation:\n"
+    "{\"direction\": \"X\", \"count\": 9}"
+)
 
     # Disable safety filters — a stock chart should never trigger them, but
     # Gemini sometimes returns finishReason=SAFETY for financial images.
