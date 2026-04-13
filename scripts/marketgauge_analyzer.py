@@ -271,8 +271,8 @@ import json
 import requests
 
 GEMINI_MODEL = "gemini-2.5-flash-lite"
-# gemini-2.5-flash-lite is text-only; use a vision-capable model when sending images
-GEMINI_VISION_MODEL = "gemini-2.0-flash"
+# Vision model for P&F chart analysis — must support multimodal/image input
+GEMINI_VISION_MODEL = "gemini-2.5-flash-lite"
 
 PNF_CHART_URL = "https://stockcharts.com/freecharts/pnf.php?c=%24SPX,PWTADANRNO[PA][D][F1!3!!!2!20]"
 
@@ -437,8 +437,8 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
         "safetySettings": safety_off,
     }
 
-    # Try primary model, then fallback
-    models_to_try = [GEMINI_VISION_MODEL, "gemini-1.5-flash"]
+    # Try primary model, then fallbacks (all support vision/multimodal on free tier)
+    models_to_try = [GEMINI_VISION_MODEL, "gemini-2.0-flash-lite", "gemini-1.5-flash-8b"]
 
     for model_attempt in models_to_try:
       try:
