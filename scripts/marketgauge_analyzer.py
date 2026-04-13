@@ -387,10 +387,8 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     print("🔍 Reading P&F chart column via Gemini vision...")
     print(f"   Model: {GEMINI_VISION_MODEL} | Image size: {len(image_data)} chars b64 | MIME: {image_mime_type}")
 
-    model = GEMINI_VISION_MODEL
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
-   model = GEMINI_VISION_MODEL
+model = GEMINI_VISION_MODEL
 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
 prompt = (
