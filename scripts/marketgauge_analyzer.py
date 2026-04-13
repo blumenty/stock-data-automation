@@ -391,32 +391,30 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "This image shows the RIGHT portion of a Point & Figure (P&F) stock chart. "
-        "On the far right edge you can see a column of price numbers — that is the Y-axis (price scale). "
-        "Immediately to the LEFT of those price numbers is the LAST (most recent) column of the chart. "
-        "That last column is made entirely of either X marks or O marks (never both). "
-        "\n\n"
-        "YOUR TASK:\n"
-        "1. Find the last column — the one directly to the left of the right-side price numbers.\n"
-        "2. Decide: does it contain X marks or O marks?\n"
-        "3. Count every mark in that column from bottom to top.\n"
-        "\n"
-        "COUNTING RULES:\n"
-        "- Each X counts as 1.\n"
-        "- Each O counts as 1.\n"
-        "- A digit/number printed inside the column (e.g. '1', '4', '7' — month markers) "
-        "counts as 1 mark of the same type as the rest of the column.\n"
-        "\n"
+        "You are looking at a CROPPED image of the far-right portion of a Point & Figure (P&F) stock chart.\n\n"
+        "LAYOUT OF THE IMAGE:\n"
+        "- FAR RIGHT EDGE: two columns of price numbers (e.g. 6800.00, 6850.00, 7000.00). "
+        "These are the right-side Y-axis price labels — NOT part of the chart data.\n"
+        "- IMMEDIATELY TO THE LEFT of those price labels: the last 2–3 active columns of the chart, "
+        "made up of X marks and O marks stacked vertically.\n\n"
+        "STEP 1 — Locate the LAST column:\n"
+        "Start at the right-side price labels and scan LEFT. "
+        "The VERY FIRST vertical stack of X's or O's you encounter is the LAST (most recent) column. "
+        "There are ZERO chart marks between this column and the price labels on the right.\n\n"
+        "STEP 2 — Identify its type:\n"
+        "Is the last column made of X marks or O marks? It is always exactly one type, never mixed.\n\n"
+        "STEP 3 — Count every mark in that last column only:\n"
+        "- Each X = 1, each O = 1\n"
+        "- A digit (e.g. '4') or letter (e.g. 'A', 'B', 'C') printed where a mark would be is a month marker — "
+        "count it as 1 mark of the same type as the column\n"
+        "- Do NOT count marks from any column to the left of the last column\n\n"
         "EXAMPLES:\n"
-        "  Column = X X X X           → direction=X, count=4\n"
-        "  Column = O O O             → direction=O, count=3\n"
-        "  Column = X X X X 7 X      → direction=X, count=6  ('7' counts as one X)\n"
-        "  Column = O O 1 O O O      → direction=O, count=6  ('1' counts as one O)\n"
-        "\n"
-        "Reply with ONLY a raw JSON object — no markdown, no explanation, nothing else:\n"
-        '{"direction": "X", "count": 4}\n'
-        "\n"
-        'direction must be exactly "X" or "O". count must be a positive integer.'
+        "  Last column: O O O O              → {\"direction\": \"O\", \"count\": 4}\n"
+        "  Last column: X X X X X X X        → {\"direction\": \"X\", \"count\": 7}\n"
+        "  Last column: X X 4 X X X          → {\"direction\": \"X\", \"count\": 6}  (digit '4' = 1 X)\n"
+        "  Last column: O O O 3 O O          → {\"direction\": \"O\", \"count\": 6}  (digit '3' = 1 O)\n\n"
+        "Reply with ONLY a raw JSON object — no markdown, no explanation:\n"
+        "{\"direction\": \"X_or_O\", \"count\": positive_integer}"
     )
 
     # Disable safety filters — a stock chart should never trigger them, but
@@ -569,8 +567,9 @@ def _crop_right_for_gemini(b64_png, output_dir):
         raw = base64.b64decode(b64_png)
         img = Image.open(io.BytesIO(raw)).convert('RGB')
         w, h = img.size
-        # Keep right 35%: last few columns + the right price axis
-        left = int(w * 0.65)
+        # Keep right 20%: just the last 2-3 columns + the right price axis
+        # Tighter crop = less visual noise so Gemini focuses on the correct column
+        left = int(w * 0.80)
         cropped = img.crop((left, 0, w, h))
         buf = io.BytesIO()
         cropped.save(buf, format='PNG')
@@ -579,7 +578,7 @@ def _crop_right_for_gemini(b64_png, output_dir):
         crop_path = os.path.join(output_dir, 'pnf-chart-crop.png')
         with open(crop_path, 'wb') as f:
             f.write(crop_bytes)
-        print(f"   Cropped to right 35% ({cropped.size[0]}x{cropped.size[1]}px) → {crop_path}")
+        print(f"   Cropped to right 20% ({cropped.size[0]}x{cropped.size[1]}px) → {crop_path}")
         return base64.b64encode(crop_bytes).decode('utf-8'), 'image/png'
     except Exception as e:
         print(f"   Crop failed ({e}), sending full image to Gemini")
