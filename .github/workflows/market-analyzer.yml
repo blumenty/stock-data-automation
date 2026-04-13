@@ -55,6 +55,8 @@ jobs:
         git add data/Shazam-market-daily.csv
         git add data/Shazam-market-daily.html
         git add data/shazam-tsi-history.csv
+        git add data/pnf-chart-latest.png
+        git add data/pnf-state.json
         
         # Check if there are changes to commit
         if git diff --staged --quiet; then
@@ -74,6 +76,8 @@ jobs:
           data/Shazam-market-daily.csv
           data/Shazam-market-daily.html
           data/shazam-tsi-history.csv
+          data/pnf-chart-latest.png
+          data/pnf-state.json
         retention-days: 7
 
 
