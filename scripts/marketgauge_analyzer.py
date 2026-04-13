@@ -407,30 +407,25 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
 
     "YOUR TASK:\n"
     "1. Start at the price numbers on the right edge.\n"
-    "2. Move LEFT until you encounter the FIRST mark (X, O, or a digit/letter).\n"
-    "3. This identifies the RIGHTMOST column.\n"
-    "4. From that exact column, scan vertically and collect ONLY marks that:\n"
-    "   - Are in the SAME column (no horizontal movement)\n"
-    "   - Are contiguous (no skipping rows)\n\n"
+    "2. Move LEFT until you encounter the FIRST mark (X, O, or digit/letter).\n"
+    "3. This identifies the RIGHTMOST column.\n\n"
 
-    "COUNTING RULES:\n"
-    "- Count each X or O as 1\n"
-    "- If a digit or letter appears in the column, it represents a box — count it as 1\n"
-    "- Ignore color, size, or lines crossing the marks\n\n"
+    "4. LOCK this column — do NOT move left or right from this position.\n\n"
 
-    "STOP when:\n"
-    "- You reach an empty cell (gap)\n"
-    "- OR the marks are no longer the same type (X vs O)\n"
-    "- OR you would need to move sideways to continue\n\n"
+    "5. From the FIRST mark you found:\n"
+    "   - Scan UPWARD in the SAME column and count all contiguous marks\n"
+    "   - Then scan DOWNWARD in the SAME column and count all contiguous marks\n\n"
 
-    "IMPORTANT:\n"
-    "- Do NOT include marks from adjacent columns\n"
-    "- Do NOT skip over gaps\n"
-    "- Do NOT count anything outside this single vertical column\n\n"
+    "6. Combine both directions + the starting mark to get TOTAL count.\n\n"
+
+    "CRITICAL RULES:\n"
+    "- Ignore faint gaps caused by grid lines or image artifacts\n"
+    "- Only stop when there is a CLEAR empty row (no mark at all)\n"
+    "- Digits/letters count as 1 mark\n"
+    "- Do NOT stop early — the column may be taller than it first appears\n\n"
 
     "OUTPUT FORMAT:\n"
-    "Return ONLY valid JSON with no explanation:\n"
-    "{\"direction\": \"X\", \"count\": 9}"
+    "{\"direction\": \"X\", \"count\": <number>}"
     )
 
     # Disable safety filters — a stock chart should never trigger them, but
