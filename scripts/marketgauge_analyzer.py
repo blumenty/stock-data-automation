@@ -388,24 +388,27 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "This is a Point & Figure (P&F) stock chart. "
-        "The chart is made of columns: some columns contain only X marks (rising price), "
-        "others contain only O marks (falling price). "
+        "This image shows the RIGHT portion of a Point & Figure (P&F) stock chart. "
+        "On the far right edge you can see a column of price numbers — that is the Y-axis (price scale). "
+        "Immediately to the LEFT of those price numbers is the LAST (most recent) column of the chart. "
+        "That last column is made entirely of either X marks or O marks (never both). "
         "\n\n"
-        "YOUR TASK: look at the RIGHTMOST column only (the last column on the far right). "
-        "Determine whether it contains X marks or O marks, then count every mark in it. "
-        "\n\n"
+        "YOUR TASK:\n"
+        "1. Find the last column — the one directly to the left of the right-side price numbers.\n"
+        "2. Decide: does it contain X marks or O marks?\n"
+        "3. Count every mark in that column from bottom to top.\n"
+        "\n"
         "COUNTING RULES:\n"
-        "- Each X in the column counts as 1.\n"
-        "- Each O in the column counts as 1.\n"
-        "- A printed digit/number (e.g. 1, 2, 3 … used as a month marker) also counts as 1 "
-        "mark of the same type as the rest of the column.\n"
+        "- Each X counts as 1.\n"
+        "- Each O counts as 1.\n"
+        "- A digit/number printed inside the column (e.g. '1', '4', '7' — month markers) "
+        "counts as 1 mark of the same type as the rest of the column.\n"
         "\n"
         "EXAMPLES:\n"
-        "  Rightmost column = X X X X          → direction=X, count=4\n"
-        "  Rightmost column = O O O             → direction=O, count=3\n"
-        "  Rightmost column = X X X X 7 X       → direction=X, count=6  (the '7' counts as one X)\n"
-        "  Rightmost column = O O 1 O O O       → direction=O, count=6  (the '1' counts as one O)\n"
+        "  Column = X X X X           → direction=X, count=4\n"
+        "  Column = O O O             → direction=O, count=3\n"
+        "  Column = X X X X 7 X      → direction=X, count=6  ('7' counts as one X)\n"
+        "  Column = O O 1 O O O      → direction=O, count=6  ('1' counts as one O)\n"
         "\n"
         "Reply with ONLY a raw JSON object — no markdown, no explanation, nothing else:\n"
         '{"direction": "X", "count": 4}\n'
@@ -499,21 +502,68 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
 
 
 def _save_image_bytes(raw, output_dir, label='pnf-chart-latest'):
-    """Detect image format, save to data/, return (base64, mime_type)."""
+    """Convert raw image bytes to PNG (via Pillow if available), save to data/,
+    and return (base64_png, 'image/png').  Always outputs PNG for Gemini consistency."""
+    import io
+    # Detect original format for logging
     if raw[:6] in (b'GIF87a', b'GIF89a'):
-        mime_type, ext = 'image/gif', 'gif'
+        orig_fmt = 'GIF'
     elif raw[:8] == b'\x89PNG\r\n\x1a\n':
-        mime_type, ext = 'image/png', 'png'
+        orig_fmt = 'PNG'
     elif raw[:2] == b'\xff\xd8':
-        mime_type, ext = 'image/jpeg', 'jpg'
+        orig_fmt = 'JPEG'
     else:
+        orig_fmt = 'unknown'
+
+    if orig_fmt == 'unknown':
         print(f"   Unknown image format, first bytes: {raw[:12]}")
         return None, None
-    save_path = os.path.join(output_dir, f'{label}.{ext}')
+
+    # Convert to PNG using Pillow so Gemini always gets a PNG
+    try:
+        from PIL import Image
+        img = Image.open(io.BytesIO(raw)).convert('RGB')
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        png_bytes = buf.getvalue()
+        print(f"   Converted {orig_fmt} → PNG ({len(raw)} → {len(png_bytes)} bytes)")
+    except Exception as e:
+        print(f"   Pillow conversion failed ({e}), using raw bytes as-is")
+        png_bytes = raw if orig_fmt == 'PNG' else raw  # best effort
+
+    save_path = os.path.join(output_dir, f'{label}.png')
     with open(save_path, 'wb') as f:
-        f.write(raw)
-    print(f"   Saved {save_path} ({len(raw)} bytes, {mime_type})")
-    return base64.b64encode(raw).decode('utf-8'), mime_type
+        f.write(png_bytes)
+    print(f"   Saved {save_path} ({len(png_bytes)} bytes)")
+    return base64.b64encode(png_bytes).decode('utf-8'), 'image/png'
+
+
+def _crop_right_for_gemini(b64_png, output_dir):
+    """Crop the rightmost ~35% of the chart PNG (last columns + right Y-axis).
+    This focuses Gemini exactly on the area the user described:
+    'the column immediately to the left of the right Y-axis price numbers'.
+    Returns (cropped_b64, 'image/png'), or the original if Pillow unavailable."""
+    import io
+    try:
+        from PIL import Image
+        raw = base64.b64decode(b64_png)
+        img = Image.open(io.BytesIO(raw)).convert('RGB')
+        w, h = img.size
+        # Keep right 35%: last few columns + the right price axis
+        left = int(w * 0.65)
+        cropped = img.crop((left, 0, w, h))
+        buf = io.BytesIO()
+        cropped.save(buf, format='PNG')
+        crop_bytes = buf.getvalue()
+        # Save for inspection
+        crop_path = os.path.join(output_dir, 'pnf-chart-crop.png')
+        with open(crop_path, 'wb') as f:
+            f.write(crop_bytes)
+        print(f"   Cropped to right 35% ({cropped.size[0]}x{cropped.size[1]}px) → {crop_path}")
+        return base64.b64encode(crop_bytes).decode('utf-8'), 'image/png'
+    except Exception as e:
+        print(f"   Crop failed ({e}), sending full image to Gemini")
+        return b64_png, 'image/png'
 
 
 def fetch_pnf_chart_image(output_dir='data'):
@@ -1132,8 +1182,11 @@ def main():
         pnf_history = load_pnf_history()
 
         if pnf_image_data:
+            # Crop to the right portion of the chart so Gemini sees only the
+            # last column + right Y-axis (exactly where the user described)
+            gemini_image, gemini_mime = _crop_right_for_gemini(pnf_image_data, 'data')
             direction, count = read_pnf_column_with_gemini(
-                pnf_image_data, pnf_mime_type or 'image/png', gemini_api_key
+                gemini_image, gemini_mime, gemini_api_key
             )
             if direction in ('X', 'O') and count > 0:
                 pnf_history = append_pnf_history(pnf_history, direction, count, today_date)
