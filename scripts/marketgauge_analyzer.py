@@ -284,15 +284,18 @@ PNF_STATE_FILE = os.path.join('data', 'pnf-state.csv')
 # --------------------------------------------------------------------------
 
 def load_pnf_history():
-    """Load the full P&F history list. Returns list of dicts (newest last)."""
+    """Load the full P&F history list. Returns list of dicts (newest last).
+    Stale stub entries (direction not X/O, or count 0) are silently dropped."""
     if not os.path.exists(PNF_STATE_FILE):
         print("No P&F history found (first run).")
         return []
     try:
         df = pd.read_csv(PNF_STATE_FILE)
         df['count'] = pd.to_numeric(df['count'], errors='coerce').fillna(0).astype(int)
+        # Drop any leftover stub rows written by older code versions
+        df = df[df['direction'].isin(['X', 'O']) & (df['count'] > 0)]
         history = df.to_dict('records')
-        print(f"Loaded P&F history: {len(history)} entries, "
+        print(f"Loaded P&F history: {len(history)} valid entries, "
               f"latest={history[-1] if history else 'none'}")
         return history
     except Exception as e:
@@ -416,67 +419,81 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
         'direction must be exactly "X" or "O". count must be a positive integer.'
     )
 
+    # Disable safety filters — a stock chart should never trigger them, but
+    # Gemini sometimes returns finishReason=SAFETY for financial images.
+    safety_off = [
+        {"category": "HARM_CATEGORY_HARASSMENT",        "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH",       "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+
     payload = {
         "contents": [{"parts": [
             {"text": prompt},
             {"inline_data": {"mime_type": image_mime_type, "data": image_data}}
         ]}],
-        "generationConfig": {"temperature": 0, "maxOutputTokens": 128}
+        "generationConfig": {"temperature": 0, "maxOutputTokens": 128},
+        "safetySettings": safety_off,
     }
 
-    try:
-        response = requests.post(url, headers={"Content-Type": "application/json"},
+    # Try primary model, then fallback
+    models_to_try = [GEMINI_VISION_MODEL, "gemini-1.5-flash"]
+
+    for model_attempt in models_to_try:
+      try:
+        attempt_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_attempt}:generateContent?key={api_key}"
+        print(f"   Trying model: {model_attempt}")
+        response = requests.post(attempt_url, headers={"Content-Type": "application/json"},
                                  json=payload, timeout=45)
 
         print(f"   HTTP status: {response.status_code}")
 
         if not response.ok:
-            print(f"❌ Vision read failed (HTTP {response.status_code})")
-            print(f"   Full error response: {response.text[:600]}")
-            return None, None
+            print(f"   ❌ HTTP {response.status_code}: {response.text[:400]}")
+            continue  # try next model
 
         result = response.json()
+        print(f"   Full Gemini response: {json.dumps(result, indent=2)[:800]}")
 
-        # Log finish reason if available (catches SAFETY, RECITATION, etc.)
+        # Log finish reason but do NOT hard-fail on SAFETY — just note it
         try:
             finish_reason = result["candidates"][0].get("finishReason", "unknown")
             print(f"   Finish reason: {finish_reason}")
-            if finish_reason not in ("STOP", "MAX_TOKENS"):
-                print(f"   ⚠️ Unexpected finish reason — full response: {json.dumps(result, indent=2)[:600]}")
-                return None, None
         except (KeyError, IndexError):
-            pass
+            finish_reason = "unknown"
 
         try:
             raw_text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
         except (KeyError, IndexError) as e:
-            print(f"❌ Could not extract text from response: {e}")
-            print(f"   Full response: {json.dumps(result, indent=2)[:600]}")
-            return None, None
+            print(f"   ❌ Could not extract text (finish_reason={finish_reason}): {e}")
+            continue  # try next model
 
         print(f"   Gemini raw response: {repr(raw_text)}")
 
-        # Strip markdown code fences (```json ... ``` or ``` ... ```)
+        # Strip markdown code fences
         clean = re.sub(r"```[a-zA-Z]*", "", raw_text).strip().strip("`").strip()
 
-        # Extract just the JSON object in case there's surrounding text
+        # Extract JSON object
         json_match = re.search(r'\{[^{}]+\}', clean)
         if json_match:
             clean = json_match.group()
 
+        parsed = None
         try:
             parsed = json.loads(clean)
         except json.JSONDecodeError as e:
-            print(f"❌ JSON parse error: {e} | cleaned text: {repr(clean)}")
-            # Last resort: try to extract values with regex
+            print(f"   JSON parse error: {e} | text: {repr(clean)}")
+            # Regex last resort
             dir_match = re.search(r'"direction"\s*:\s*"([XO])"', raw_text, re.IGNORECASE)
             cnt_match = re.search(r'"count"\s*:\s*(\d+)', raw_text)
             if dir_match and cnt_match:
-                direction = dir_match.group(1).upper()
-                count = int(cnt_match.group(1))
-                print(f"   Recovered via regex: direction={direction}, count={count}")
-                return direction, count
-            return None, None
+                d = dir_match.group(1).upper()
+                c = int(cnt_match.group(1))
+                print(f"   Recovered via regex: direction={d}, count={c}")
+                return d, c
+            print(f"   Could not parse response from {model_attempt}, trying next model")
+            continue
 
         direction = str(parsed.get("direction", "")).upper().strip()
         try:
@@ -485,20 +502,23 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
             count = 0
 
         if direction not in ("X", "O"):
-            print(f"❌ direction value '{direction}' is not X or O")
-            return None, None
+            print(f"   direction='{direction}' is not X or O, trying next model")
+            continue
         if count <= 0:
-            print(f"❌ count value {count} is not a positive integer")
-            return None, None
+            print(f"   count={count} is not positive, trying next model")
+            continue
 
         print(f"✅ P&F column read: direction={direction}, count={count}")
         return direction, count
 
-    except Exception as e:
-        print(f"❌ Exception in read_pnf_column_with_gemini: {e}")
+      except Exception as e:
+        print(f"   Exception with {model_attempt}: {e}")
         import traceback
         traceback.print_exc()
-        return None, None
+        continue
+
+    print("❌ All Gemini vision models failed — P&F column not read.")
+    return None, None
 
 
 def _save_image_bytes(raw, output_dir, label='pnf-chart-latest'):
