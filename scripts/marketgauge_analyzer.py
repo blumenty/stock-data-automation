@@ -301,11 +301,11 @@ def load_pnf_history():
 
 
 def append_pnf_history(history, direction, count, today_str):
-    """Append today's reading. Replace any existing entry for today to avoid duplicates."""
+    """Append today's reading. Replace any existing entry for today to avoid duplicates.
+    Keeps only the last 2 entries (today + yesterday)."""
     history = [e for e in history if e.get('date') != today_str]
     history.append({'date': today_str, 'direction': direction, 'count': count})
-    # Keep last 60 trading days
-    return history[-60:]
+    return history[-2:]
 
 
 def save_pnf_history(history):
@@ -388,16 +388,29 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "This image is a Point & Figure (P&F) stock chart showing columns of X's and O's. "
-        "X columns go up (demand), O columns go down (supply). "
-        "Find the rightmost column — it is the most recent one, at the far right edge of the chart. "
-        "Count every filled mark in that rightmost column. "
-        "Important: a digit or number printed inside the column (e.g. 1, 2, 3 …) represents a month "
-        "boundary and counts as ONE additional X or O — include it in your total count. "
-        "Reply with ONLY a raw JSON object, nothing else, no markdown, no explanation:\n"
-        '{"direction": "X", "count": 7}\n'
-        'Use "X" if the rightmost column contains X marks, "O" if it contains O marks. '
-        "count is an integer >= 1."
+        "This is a Point & Figure (P&F) stock chart. "
+        "The chart is made of columns: some columns contain only X marks (rising price), "
+        "others contain only O marks (falling price). "
+        "\n\n"
+        "YOUR TASK: look at the RIGHTMOST column only (the last column on the far right). "
+        "Determine whether it contains X marks or O marks, then count every mark in it. "
+        "\n\n"
+        "COUNTING RULES:\n"
+        "- Each X in the column counts as 1.\n"
+        "- Each O in the column counts as 1.\n"
+        "- A printed digit/number (e.g. 1, 2, 3 … used as a month marker) also counts as 1 "
+        "mark of the same type as the rest of the column.\n"
+        "\n"
+        "EXAMPLES:\n"
+        "  Rightmost column = X X X X          → direction=X, count=4\n"
+        "  Rightmost column = O O O             → direction=O, count=3\n"
+        "  Rightmost column = X X X X 7 X       → direction=X, count=6  (the '7' counts as one X)\n"
+        "  Rightmost column = O O 1 O O O       → direction=O, count=6  (the '1' counts as one O)\n"
+        "\n"
+        "Reply with ONLY a raw JSON object — no markdown, no explanation, nothing else:\n"
+        '{"direction": "X", "count": 4}\n'
+        "\n"
+        'direction must be exactly "X" or "O". count must be a positive integer.'
     )
 
     payload = {
@@ -1122,17 +1135,13 @@ def main():
             direction, count = read_pnf_column_with_gemini(
                 pnf_image_data, pnf_mime_type or 'image/png', gemini_api_key
             )
-            if direction and count:
+            if direction in ('X', 'O') and count > 0:
                 pnf_history = append_pnf_history(pnf_history, direction, count, today_date)
+                save_pnf_history(pnf_history)
             else:
-                print("⚠️  Vision read returned no data — saving stub entry for today.")
-                pnf_history = append_pnf_history(pnf_history, 'unknown', 0, today_date)
+                print("⚠️  Gemini could not read P&F column — pnf-state.csv not updated.")
         else:
-            print("⚠️  No P&F image available — saving stub entry for today.")
-            pnf_history = append_pnf_history(pnf_history, 'unknown', 0, today_date)
-
-        # Always save — ensures pnf-state.json exists after every run
-        save_pnf_history(pnf_history)
+            print("⚠️  No P&F image available — pnf-state.csv not updated.")
 
         # --- 4b: Compute signal/corroboration purely in Python from stored history ---
         pnf_signal_summary = compute_pnf_signal(pnf_history)
