@@ -440,81 +440,92 @@ def read_pnf_column_with_gemini(image_data, image_mime_type, api_key):
     models_to_try = [GEMINI_VISION_MODEL, "gemini-2.5-flash"]
 
     for model_attempt in models_to_try:
-      try:
         attempt_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_attempt}:generateContent?key={api_key}"
-        print(f"   Trying model: {model_attempt}")
-        response = requests.post(attempt_url, headers={"Content-Type": "application/json"},
-                                 json=payload, timeout=45)
 
-        print(f"   HTTP status: {response.status_code}")
+        for retry in range(3):  # up to 3 attempts per model for transient errors
+            try:
+                print(f"   Trying model: {model_attempt}" + (f" (retry {retry})" if retry else ""))
+                response = requests.post(attempt_url, headers={"Content-Type": "application/json"},
+                                         json=payload, timeout=45)
+                print(f"   HTTP status: {response.status_code}")
 
-        if not response.ok:
-            print(f"   ❌ HTTP {response.status_code}: {response.text[:400]}")
-            continue  # try next model
+                # Transient errors — wait and retry same model
+                if response.status_code in (429, 503):
+                    wait = 15 * (retry + 1)
+                    print(f"   ⏳ Rate-limited/overloaded ({response.status_code}), waiting {wait}s...")
+                    time.sleep(wait)
+                    continue
 
-        result = response.json()
-        print(f"   Full Gemini response: {json.dumps(result, indent=2)[:800]}")
+                # Non-retryable error — move to next model
+                if not response.ok:
+                    print(f"   ❌ HTTP {response.status_code}: {response.text[:400]}")
+                    break
 
-        # Log finish reason but do NOT hard-fail on SAFETY — just note it
-        try:
-            finish_reason = result["candidates"][0].get("finishReason", "unknown")
-            print(f"   Finish reason: {finish_reason}")
-        except (KeyError, IndexError):
-            finish_reason = "unknown"
+                result = response.json()
+                print(f"   Full Gemini response: {json.dumps(result, indent=2)[:800]}")
 
-        try:
-            raw_text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except (KeyError, IndexError) as e:
-            print(f"   ❌ Could not extract text (finish_reason={finish_reason}): {e}")
-            continue  # try next model
+                # Log finish reason
+                try:
+                    finish_reason = result["candidates"][0].get("finishReason", "unknown")
+                    print(f"   Finish reason: {finish_reason}")
+                except (KeyError, IndexError):
+                    finish_reason = "unknown"
 
-        print(f"   Gemini raw response: {repr(raw_text)}")
+                try:
+                    raw_text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+                except (KeyError, IndexError) as e:
+                    print(f"   ❌ Could not extract text (finish_reason={finish_reason}): {e}")
+                    break  # try next model
 
-        # Strip markdown code fences
-        clean = re.sub(r"```[a-zA-Z]*", "", raw_text).strip().strip("`").strip()
+                print(f"   Gemini raw response: {repr(raw_text)}")
 
-        # Extract JSON object
-        json_match = re.search(r'\{[^{}]+\}', clean)
-        if json_match:
-            clean = json_match.group()
+                # Strip markdown code fences just in case
+                clean = re.sub(r"```[a-zA-Z]*", "", raw_text).strip().strip("`").strip()
 
-        parsed = None
-        try:
-            parsed = json.loads(clean)
-        except json.JSONDecodeError as e:
-            print(f"   JSON parse error: {e} | text: {repr(clean)}")
-            # Regex last resort
-            dir_match = re.search(r'"direction"\s*:\s*"([XO])"', raw_text, re.IGNORECASE)
-            cnt_match = re.search(r'"count"\s*:\s*(\d+)', raw_text)
-            if dir_match and cnt_match:
-                d = dir_match.group(1).upper()
-                c = int(cnt_match.group(1))
-                print(f"   Recovered via regex: direction={d}, count={c}")
-                return d, c
-            print(f"   Could not parse response from {model_attempt}, trying next model")
-            continue
+                # Extract JSON object
+                json_match = re.search(r'\{[^{}]+\}', clean)
+                if json_match:
+                    clean = json_match.group()
 
-        direction = str(parsed.get("direction", "")).upper().strip()
-        try:
-            count = int(parsed.get("count", 0))
-        except (ValueError, TypeError):
-            count = 0
+                try:
+                    parsed = json.loads(clean)
+                except json.JSONDecodeError as e:
+                    print(f"   JSON parse error: {e} | text: {repr(clean)}")
+                    # Regex last resort
+                    dir_match = re.search(r'"direction"\s*:\s*"([XO])"', raw_text, re.IGNORECASE)
+                    cnt_match = re.search(r'"count"\s*:\s*(\d+)', raw_text)
+                    if dir_match and cnt_match:
+                        d = dir_match.group(1).upper()
+                        c = int(cnt_match.group(1))
+                        print(f"   Recovered via regex: direction={d}, count={c}")
+                        return d, c
+                    print(f"   Could not parse response from {model_attempt}, trying next model")
+                    break
 
-        if direction not in ("X", "O"):
-            print(f"   direction='{direction}' is not X or O, trying next model")
-            continue
-        if count <= 0:
-            print(f"   count={count} is not positive, trying next model")
-            continue
+                direction = str(parsed.get("direction", "")).upper().strip()
+                try:
+                    count = int(parsed.get("count", 0))
+                except (ValueError, TypeError):
+                    count = 0
 
-        print(f"✅ P&F column read: direction={direction}, count={count}")
-        return direction, count
+                if direction not in ("X", "O"):
+                    print(f"   direction='{direction}' is not X or O, trying next model")
+                    break
+                if count <= 0:
+                    print(f"   count={count} is not positive, trying next model")
+                    break
 
-      except Exception as e:
-        print(f"   Exception with {model_attempt}: {e}")
-        import traceback
-        traceback.print_exc()
-        continue
+                print(f"✅ P&F column read: direction={direction}, count={count}")
+                return direction, count
+
+            except Exception as e:
+                print(f"   Exception with {model_attempt} (retry {retry}): {e}")
+                import traceback
+                traceback.print_exc()
+                if retry < 2:
+                    time.sleep(5)
+                    continue
+                break
 
     print("❌ All Gemini vision models failed — P&F column not read.")
     return None, None
