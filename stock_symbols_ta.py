@@ -130,7 +130,6 @@ TOP_ETFS_IL = [
 
     # MTF (Migdal) ETFs (6)
     'MTF-F74.TA', 'MTF-F42.TA', 'MTF-F18.TA', 'MTF-F66.TA', 'MTF-F71.TA',
-    'MTF-F84.TA',
 
     # Meitav Tachlit ETFs (3)
     'TCH-F171.TA', 'TCH-F172.TA', 'TCH-F83.TA',
