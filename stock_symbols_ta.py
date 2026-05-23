@@ -4,13 +4,13 @@ Stock Symbols - Exact same stocks as your Dart implementation
 """
 # Israeli Stocks for Autodownloading (TA-125 + TA-SME60 + TA-Others + TA-Remainings + Top ETFs IL) - 228 stocks
 
-# Official TA-125 Index - 123 Stocks Exactly (updated: 2025-01-04)
+# Official TA-125 Index - 124 Stocks Exactly (updated: 2025-05-07)
 TA125_STOCKS = [
     # Banks & Financial Services (22)
     'FIBIH.TA', 'AMPA.TA', 'DSCT.TA', 'POLI.TA', 'LUMI.TA', 'MZTF.TA',
     'FIBI.TA', 'IBI.TA', 'AMOT.TA', 'EQTL.TA', 'MTAV.TA', 'ISRS.TA',
     'TASE.TA', 'KEN.TA', 'HARL.TA', 'CLIS.TA', 'MMHD.TA', 'MGDL.TA',
-    'ISCD.TA', 'ISHO.TA', 'MRIN.TA', 'LAPD.TA',
+    'ISCD.TA', 'ISHO.TA', 'MRIN.TA', 'LAPD.TA', 'WESR.TA',
 
     # Technology (19)
     'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA',
@@ -91,7 +91,7 @@ TA_REMAINING_STOCKS = [
 
     # Financial (9)
     'LBRA.TA', 'MLRN.TA', 'MTRD.TA', 'PEN.TA', 'SRAC.TA', 'JCFN.TA',
-    'ZUR.TA', 'WESR.TA', 'EXPO.TA',
+    'ZUR.TA', 'EXPO.TA',
 
     # Healthcare (4)
     'BONS.TA', 'BWAY.TA', 'CGEN.TA', 'MTLF.TA',
