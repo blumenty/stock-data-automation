@@ -14,7 +14,7 @@ TA125_STOCKS = [
 
     # Technology (19)
     'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA',
-    'NYAX.TA', 'ONE.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA', 'MGIC.TA',
+    'NYAX.TA', 'ONE.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA',
     'MLTM.TA', 'NXSN.TA', 'PRTC.TA', 'BEZQ.TA', 'PTNR.TA', 'CEL.TA',
     'GILT.TA',
 
@@ -65,16 +65,16 @@ SME60_STOCKS = [
     'VTNA.TA',
 
     # Healthcare & Biomedical (4)
-    'ILX.TA', 'KMDA.TA', 'URBC.TA',
+    'ILX.TA', 'KMDA.TA', 'URBC.TA', 'AMAL.TA',
 
-    # Retail & Consumer (6)
+    # Retail & Consumer (7)
     'CAST.TA', 'ISTA.TA', 'SCOP.TA', 'BLDI.TA', 'DIPL.TA', 'KRUR.TA',
     'TTAM.TA',
 
-    # Energy & Utilities (4)
+    # Energy & Utilities (3)
     'ECNR.TA', 'ELLO.TA', 'ZPRS.TA',
 
-    # Other (2)
+    # Other (4)
     'LUZN.TA', 'NAWI.TA', 'LEVI.TA', 'ISI.TA',
 ]
 
