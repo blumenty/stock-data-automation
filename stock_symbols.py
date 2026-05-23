@@ -101,7 +101,7 @@ SP500_STOCKS = [
 'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES', 'MRSH',
 #
 'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP', 'ZS', 'MRVL',
-'SIRI', 'FER', 'ALNY', 'INSM', 'TRI', 'MTCH', 'HOLX', 'CTRA',
+'SIRI', 'FER', 'ALNY', 'INSM', 'TRI', 'MTCH', 'CTRA',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
 'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS', 'FLR', 'PAYC','LW', 'MOH',
