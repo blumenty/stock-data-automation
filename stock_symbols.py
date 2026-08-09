@@ -49,7 +49,7 @@ TA125_STOCKS = [
 # S&P 500 Stocks (exact same as your Dart code) 
 SP500_STOCKS = [
 'META', 'MRK', 'IBKR', 'EME', 'WSM', 'TKO', 'TTD',
-'WDAY', 'AMCR', 'MO', 'COF', 'CPT', 'CPB', 'EG', 'EVRG', 'FISV', 'KDP',
+'WDAY', 'AMCR', 'MO', 'COF', 'CPT', 'FLEX', 'EG', 'EVRG', 'FISV', 'KDP',
 'MLM', 'VLTO', 'MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES',
 'AFL', 'A', 'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT',
 'ALL', 'GOOGL', 'GOOG', 'AMZN', 'AEE', 'AEP', 'AXP', 'AIG', 'AMT', 'AWK',
@@ -61,12 +61,12 @@ SP500_STOCKS = [
 'CCL', 'CARR', 'CAT', 'CBOE', 'CBRE', 'CDW', 'COR', 'CNC', 'CNP', 'CF',
 'CRL', 'SCHW', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF', 'CTAS',
 'CSCO', 'C', 'CFG', 'CLX', 'CME', 'CMS', 'KO', 'CTSH', 'COIN', 'CL',
-'CMCSA', 'CAG', 'COP', 'ED', 'STZ', 'CEG', 'COO', 'CPRT', 'GLW', 'CTVA',
+'CMCSA', 'HONA', 'COP', 'ED', 'STZ', 'CEG', 'COO', 'CPRT', 'GLW', 'CTVA',
 'CVNA', 'CSGP', 'COST', 'VEEV', 'CRWD', 'CCI', 'CSX', 'CMI', 'CVS', 'DHR',
 'DRI', 'DVA', 'CIEN', 'DECK', 'DE', 'DELL', 'DAL', 'DVN', 'DXCM', 'FANG',
 'DLR', 'DG', 'DLTR', 'D', 'DPZ', 'DASH', 'DOV', 'DOW', 'DHI', 'DTE',
-'DUK', 'DD', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'ELV', 'EMR',
-'ETR', 'EOG', 'EPAM', 'EQT', 'EFX', 'EQIX', 'EQR', 'ERIE', 'ESS', 'EL',
+'DUK', 'DD', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'FERG', 'ELV', 'EMR',
+'ETR', 'EOG', 'EQT', 'EFX', 'EQIX', 'EQR', 'ERIE', 'ESS', 'EL',
 'ES', 'EXC', 'EXPE', 'EXPD', 'EXR', 'XOM', 'FFIV', 'FDS', 'FICO', 'FAST',
 'FRT', 'FDX', 'FIS', 'FITB', 'FSLR', 'FE', 'CPAY', 'F', 'FTNT', 'FTV',
 'FOXA', 'FOX', 'BEN', 'FCX', 'GRMN', 'IT', 'GE', 'GEV', 'GEHC', 'GEN',
@@ -86,7 +86,7 @@ SP500_STOCKS = [
 'NUE', 'NVDA', 'NVR', 'NXPI', 'ORLY', 'OXY', 'ODFL', 'OMC', 'ON', 'OKE',
 'ORCL', 'OTIS', 'PCAR', 'PKG', 'PLTR', 'PANW', 'Q', 'PSKY', 'PH', 'PAYX',
 'SATS', 'PYPL', 'PNR', 'PEP', 'PFE', 'PCG', 'PM', 'PSX', 'PNW', 'PNC',
-'POOL', 'PPG', 'PPL', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PEG', 'PTC',
+'MRVL', 'PPG', 'PPL', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PEG', 'PTC',
 'PSA', 'PHM', 'APO', 'PWR', 'QCOM', 'DGX', 'RL', 'RJF', 'RTX', 'O',
 'REG', 'REGN', 'RF', 'RSG', 'RMD', 'RVTY', 'ROK', 'ROL', 'ROP', 'ROST',
 'RCL', 'SPGI', 'CRM', 'SBAC', 'SLB', 'STX', 'SRE', 'NOW', 'SHW', 'SPG',
@@ -98,13 +98,15 @@ SP500_STOCKS = [
 'VTR', 'VRSN', 'VRSK', 'VZ', 'VRTX', 'VTRS', 'VICI', 'V', 'VST', 'VMC',
 'WRB', 'GWW', 'WAB', 'WMT', 'DIS', 'WBD', 'WM', 'WAT', 'WEC', 'WFC',
 'WELL', 'WST', 'WDC', 'WY', 'WMB', 'EXE', 'WTW', 'WYNN', 'XEL', 'XYL',
-'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES', 'MRSH',
+'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES', 'MRSH', 'FDXF',
 #
-'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP', 'ZS', 'MRVL',
-'SIRI', 'FER', 'ALNY', 'INSM', 'TRI', 'MTCH', 'CTRA',
+'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP',  
+'SIRI', 'FER', 'ALNY', 'NBIS', 'TRI', 'MTCH', 'CTRA', 
+'EA', 'RKLB', 'CRWV', 'SPCX',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
 'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS', 'FLR', 'PAYC','LW', 'MOH',
+'EPAM', 'CPB', 'CAG', 'ZS', 'POOL', 'INSM',
 #
 'ESLT',
 ]
