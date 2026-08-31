@@ -15,7 +15,7 @@ TA125_STOCKS = [
     # Technology (19)
     'TEVA.TA', 'ESLT.TA', 'NVMI.TA', 'NICE.TA', 'TSEM.TA', 'CAMT.TA',
     'NYAX.TA', 'ONE.TA', 'FORTY.TA', 'MTRX.TA', 'HLAN.TA',
-    'MLTM.TA', 'NXSN.TA', 'PRTC.TA', 'BEZQ.TA', 'PTNR.TA', 'CEL.TA',
+    'NXSN.TA', 'PRTC.TA', 'BEZQ.TA', 'PTNR.TA', 'CEL.TA',
     'GILT.TA',
 
     # Real Estate (24)
@@ -49,7 +49,7 @@ TA125_STOCKS = [
 SME60_STOCKS = [
     # Technology (11)
     'TLSY.TA', 'AUDC.TA', 'ALLT.TA', 'PERI.TA', 'QLTU.TA', 'ANLT.TA',
-    'ARD.TA', 'ORBI.TA', 'CMDR.TA', 'MLTM.TA', 'HIPR.TA',
+    'ARD.TA', 'ORBI.TA', 'CMDR.TA', 'MLTH.TA', 'HIPR.TA',
 
     # Industrial & Manufacturing (10)
     'FBRT.TA', 'PLSN.TA', 'ASHO.TA', 'TDRN.TA', 'AFHL.TA', 'TATT.TA',
