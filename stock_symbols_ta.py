@@ -90,7 +90,7 @@ TA_REMAINING_STOCKS = [
     'PTCH.TA',
 
     # Financial (9)
-    'LBRA.TA', 'MLRN.TA', 'MTRD.TA', 'PEN.TA', 'SRAC.TA', 'JCFN.TA',
+    'LBRA.TA', 'MLRN.TA', 'MTRD.TA', 'SRAC.TA', 'JCFN.TA',
     'ZUR.TA', 'EXPO.TA',
 
     # Healthcare (4)
