@@ -56,7 +56,7 @@ SP500_STOCKS = [
 'AMP', 'AME', 'AMGN', 'APH', 'ADI', 'AON', 'APA', 'AAPL', 'AMAT', 'APTV',
 'ACGL', 'ADM', 'ANET', 'AJG', 'AIZ', 'T', 'ATO', 'ADSK', 'ADP', 'AZO',
 'AVB', 'AVY', 'AXON', 'BKR', 'BALL', 'BAC', 'BAX', 'BDX', 'BRK.B', 'BBY',
-'TECH', 'BIIB', 'BLK', 'BX', 'XYZ', 'BK', 'BA', 'BKNG', 'BSX', 'BMY',
+'TECH', 'BIIB', 'BLK', 'BX', 'XYZ', 'BNY', 'BA', 'BKNG', 'BSX', 'BMY',
 'AVGO', 'BR', 'BRO', 'BF.B', 'BLDR', 'BG', 'BXP', 'CHRW', 'CDNS', 'CAH',
 'CCL', 'CARR', 'CAT', 'CBOE', 'CBRE', 'CDW', 'COR', 'CNC', 'CNP', 'CF',
 'CRL', 'SCHW', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF', 'CTAS',
@@ -101,7 +101,7 @@ SP500_STOCKS = [
 'YUM', 'ZBRA', 'ZBH', 'ZTS', 'APP', 'HOOD', 'ARES', 'MRSH', 'FDXF',
 #
 'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP',  
-'SIRI', 'FER', 'ALNY', 'NBIS', 'TRI', 'MTCH', 'CTRA', 
+'SIRI', 'FER', 'ALNY', 'NBIS', 'TRI', 'MTCH', 
 'EA', 'RKLB', 'CRWV', 'SPCX',
 #
 'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
@@ -116,7 +116,7 @@ TOP_ETFS = [
     # Original Top Performing ETFs (37)
     'WGMI', 'EUAD', 'SHLD', 'STCE', 'PSIL', 'BKCH', 'GREK', 'ARKW', 'EWY', 'KEMQ',
     'HYDR', 'UFO', 'CNXT', 'DAPP', 'BLOK', 'EWP', 'EPOL', 'CTEC', 'FGM', 'AFK', 'DECO',
-    'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLV', 'RING', 'GDX', 'SIL', 'URA', 'DMAT', 'COPJ',
+    'ARKK', 'CHAT', 'BITQ', 'KSTR', 'SLV', 'RING', 'GDX', 'SIL', 'URA', 'COPJ',
     'NLR', 'BTGD', 'PPLT', 'IBLC', 'XME',
     
     # Additional ETFs from PDF (70)
