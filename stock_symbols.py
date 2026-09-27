@@ -48,16 +48,16 @@ TA125_STOCKS = [
 
 # S&P 500 Stocks (exact same as your Dart code) 
 SP500_STOCKS = [
-'META', 'MRK', 'IBKR', 'EME', 'WSM', 'TKO', 'TTD',
+'META', 'MRK', 'IBKR', 'EME', 'WSM', 'TKO', 'P',
 'WDAY', 'AMCR', 'MO', 'COF', 'CPT', 'FLEX', 'EG', 'EVRG', 'FISV', 'KDP',
 'MLM', 'VLTO', 'MMM', 'AOS', 'ABT', 'ABBV', 'ACN', 'ADBE', 'AMD', 'AES',
 'AFL', 'A', 'APD', 'ABNB', 'AKAM', 'ALB', 'ARE', 'ALGN', 'ALLE', 'LNT',
 'ALL', 'GOOGL', 'GOOG', 'AMZN', 'AEE', 'AEP', 'AXP', 'AIG', 'AMT', 'AWK',
 'AMP', 'AME', 'AMGN', 'APH', 'ADI', 'AON', 'APA', 'AAPL', 'AMAT', 'APTV',
 'ACGL', 'ADM', 'ANET', 'AJG', 'AIZ', 'T', 'ATO', 'ADSK', 'ADP', 'AZO',
-'AVB', 'AVY', 'AXON', 'BKR', 'BALL', 'BAC', 'BAX', 'BDX', 'BRK.B', 'BBY',
+'VMRK', 'AVY', 'AXON', 'BKR', 'BALL', 'BAC', 'BAX', 'BDX', 'BRK.B', 'BBY',
 'TECH', 'BIIB', 'BLK', 'BX', 'XYZ', 'BNY', 'BA', 'BKNG', 'BSX', 'BMY',
-'AVGO', 'BR', 'BRO', 'BF.B', 'BLDR', 'BG', 'BXP', 'CHRW', 'CDNS', 'CAH',
+'AVGO', 'BR', 'BRO', 'BF.B', 'ILMN', 'BG', 'BXP', 'CHRW', 'CDNS', 'CAH',
 'CCL', 'CARR', 'CAT', 'CBOE', 'CBRE', 'CDW', 'COR', 'CNC', 'CNP', 'CF',
 'CRL', 'SCHW', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF', 'CTAS',
 'CSCO', 'C', 'CFG', 'CLX', 'CME', 'CMS', 'KO', 'CTSH', 'COIN', 'CL',
@@ -80,12 +80,12 @@ SP500_STOCKS = [
 'COHR', 'LVS', 'LDOS', 'LEN', 'LLY', 'LIN', 'LYV', 'CRH', 'LMT', 'LII',
 'L', 'LOW', 'LULU', 'LYB', 'MTB', 'TPL', 'MPC', 'MAR', 'MMC', 'MAS',
 'MA', 'VRT', 'MKC', 'MCD', 'MCK', 'MDT', 'MET', 'MTD', 'MGM', 'MCHP',
-'MU', 'MSFT', 'MAA', 'MRNA', 'FIX', 'LITE', 'TAP', 'MDLZ', 'MPWR', 'MNST',
+'MU', 'MSFT', 'MAA', 'MRNA', 'FIX', 'LITE', 'BE', 'MDLZ', 'MPWR', 'MNST',
 'MCO', 'MS', 'MOS', 'MSI', 'MSCI', 'NDAQ', 'NTAP', 'NFLX', 'NEM', 'NWSA',
 'NWS', 'NEE', 'NKE', 'NI', 'NDSN', 'NSC', 'NTRS', 'NOC', 'NCLH', 'NRG',
 'NUE', 'NVDA', 'NVR', 'NXPI', 'ORLY', 'OXY', 'ODFL', 'OMC', 'ON', 'OKE',
 'ORCL', 'OTIS', 'PCAR', 'PKG', 'PLTR', 'PANW', 'Q', 'PSKY', 'PH', 'PAYX',
-'SATS', 'PYPL', 'PNR', 'PEP', 'PFE', 'PCG', 'PM', 'PSX', 'PNW', 'PNC',
+'PYPL', 'PNR', 'PEP', 'PFE', 'PCG', 'PM', 'PSX', 'PNW', 'PNC', 'RDDT',
 'MRVL', 'PPG', 'PPL', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PEG', 'PTC',
 'PSA', 'PHM', 'APO', 'PWR', 'QCOM', 'DGX', 'RL', 'RJF', 'RTX', 'O',
 'REG', 'REGN', 'RF', 'RSG', 'RMD', 'RVTY', 'ROK', 'ROL', 'ROP', 'ROST',
@@ -102,10 +102,10 @@ SP500_STOCKS = [
 #
 'AZN', 'ARM', 'CCEP', 'MELI', 'PDD', 'TEAM', 'MSTR', 'SHOP',  
 'SIRI', 'FER', 'ALNY', 'NBIS', 'TRI', 'MTCH', 
-'EA', 'RKLB', 'CRWV', 'SPCX',
+'RKLB', 'CRWV', 'SPCX', 'ALAB', 'TTD',
 #
-'CSIQ', 'AA', 'IIPR', 'MP', 'BE', 'RDDT', 'SMR', 'RGTI', 'QBTS', 'OKLO',
-'IONQ', 'NXE', 'CLS', 'ASML', 'ILMN', 'GFS', 'FLR', 'PAYC','LW', 'MOH',
+'CSIQ', 'AA', 'IIPR', 'MP', 'TAP', 'SMR', 'RGTI', 'QBTS', 'OKLO',
+'IONQ', 'NXE', 'CLS', 'ASML', 'BLDR', 'GFS', 'FLR', 'PAYC','LW', 'MOH',
 'EPAM', 'CPB', 'CAG', 'ZS', 'POOL', 'INSM',
 #
 'ESLT',
@@ -126,7 +126,7 @@ TOP_ETFS = [
     'IZRL', 'MAGS', 'MJ', 'MOO', 'MTUM', 'OEF', 'OIH', 'PBW', 'PHO', 'PPA',
     'QQQ', 'ROBT', 'RSP', 'SMH', 'SOYB', 'SPY', 'TAN', 'UNG', 'VGK', 'VGT',
     'VT', 'VTI', 'VUG', 'VWO', 'WEAT', 'WOOD', 'XLB', 'XLC', 'XLE', 'XLF',
-    'XLG', 'XLI', 'XLK', 'XLV', 'XLY', 'XLU', 'XLP', 'XLRE', 'XOP', 'XRT',
+    'XLG', 'XLI', 'XLK', 'XLV', 'XLY', 'XLU', 'XLP', 'XLRE', 'XOP', 'XRT', 'DMAT',
 ]
 
 def get_all_symbols():
