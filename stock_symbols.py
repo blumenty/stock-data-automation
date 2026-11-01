@@ -84,7 +84,7 @@ SP500_STOCKS = [
 'MCO', 'MS', 'MOS', 'MSI', 'MSCI', 'NDAQ', 'NTAP', 'NFLX', 'NEM', 'NWSA',
 'NWS', 'NEE', 'NKE', 'NI', 'NDSN', 'NSC', 'NTRS', 'NOC', 'NCLH', 'NRG',
 'NUE', 'NVDA', 'NVR', 'NXPI', 'ORLY', 'OXY', 'ODFL', 'OMC', 'ON', 'OKE',
-'ORCL', 'OTIS', 'PCAR', 'PKG', 'PLTR', 'PANW', 'Q', 'PSKY', 'PH', 'PAYX',
+'ORCL', 'OTIS', 'PCAR', 'PKG', 'PLTR', 'PANW', 'Q', 'TWLO', 'PH', 'PAYX',
 'PYPL', 'PNR', 'PEP', 'PFE', 'PCG', 'PM', 'PSX', 'PNW', 'PNC', 'RDDT',
 'MRVL', 'PPG', 'PPL', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PEG', 'PTC',
 'PSA', 'PHM', 'APO', 'PWR', 'QCOM', 'DGX', 'RL', 'RJF', 'RTX', 'O',
